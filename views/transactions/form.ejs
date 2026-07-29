@@ -1,0 +1,63 @@
+<%- include('../partials/header', { title: title }) %>
+
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-4"><%= row ? 'تعديل حركة' : 'إضافة حركة جديدة' %> — <%= pageTitle %></h5>
+        <form method="POST" action="<%= row ? '/' + moduleKey + '/' + row.id : '/' + moduleKey %>">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">التاريخ</label>
+              <input type="date" name="entry_date" class="form-control" required
+                     value="<%= row ? new Date(row.entry_date).toISOString().slice(0,10) : today %>">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label"><%= partyLabel %></label>
+              <input type="text" name="party" class="form-control" required value="<%= row ? row.party : '' %>">
+            </div>
+
+            <% if (useReasonDropdown) { %>
+            <div class="col-md-6">
+              <label class="form-label">السبب</label>
+              <select name="reason" class="form-select" required>
+                <option value="">-- اختر السبب --</option>
+                <% reasons.forEach(r => { %>
+                  <option value="<%= r.name %>" <%= row && row.reason === r.name ? 'selected' : '' %>><%= r.name %></option>
+                <% }) %>
+              </select>
+            </div>
+            <% } %>
+
+            <div class="col-md-6">
+              <label class="form-label">المبلغ</label>
+              <input type="number" step="0.01" min="0" name="amount" class="form-control" required value="<%= row ? row.amount : '' %>">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">الحساب (اختياري)</label>
+              <select name="account_id" class="form-select">
+                <option value="">-- بدون --</option>
+                <% accounts.forEach(a => { %>
+                  <option value="<%= a.id %>" <%= row && row.account_id === a.id ? 'selected' : '' %>><%= a.name %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">وصف / ملاحظات</label>
+              <textarea name="description" class="form-control" rows="3"><%= row ? (row.description || '') : '' %></textarea>
+            </div>
+          </div>
+
+          <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary px-4">حفظ</button>
+            <a href="/<%= moduleKey %>" class="btn btn-outline-secondary">إلغاء</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

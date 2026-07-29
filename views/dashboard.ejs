@@ -1,0 +1,71 @@
+<%- include('partials/header', { title: 'الرئيسية' }) %>
+
+<h4 class="fw-bold mb-4">لوحة التحكم — <%= company.name %></h4>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4 col-lg-2-4">
+    <div class="stat-card bg-treasury">
+      <span>رصيد الخزنة</span>
+      <h3><%= Number(stats.treasury).toLocaleString('ar-EG') %></h3>
+      <small><%= company.currency %></small>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card bg-purchases">
+      <span>المشتريات (الشهر)</span>
+      <h3><%= Number(stats.purchases).toLocaleString('ar-EG') %></h3>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card bg-expenses">
+      <span>المصروفات (الشهر)</span>
+      <h3><%= Number(stats.expenses).toLocaleString('ar-EG') %></h3>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card bg-sales">
+      <span>المبيعات (الشهر)</span>
+      <h3><%= Number(stats.sales).toLocaleString('ar-EG') %></h3>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card bg-receipts">
+      <span>استلام فلوس (الشهر)</span>
+      <h3><%= Number(stats.receipts).toLocaleString('ar-EG') %></h3>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">آخر الحركات</h6>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>النوع</th>
+            <th>التاريخ</th>
+            <th>الطرف</th>
+            <th>المبلغ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% const labels = { purchases: 'مشتريات', expenses: 'مصروفات', sales: 'مبيعات', receipts: 'استلام فلوس' }; %>
+          <% recent.forEach(r => { %>
+            <tr>
+              <td><span class="badge bg-secondary"><%= labels[r.module] %></span></td>
+              <td><%= new Date(r.entry_date).toLocaleDateString('ar-EG') %></td>
+              <td><%= r.party %></td>
+              <td><%= Number(r.amount).toLocaleString('ar-EG') %> <%= company.currency %></td>
+            </tr>
+          <% }) %>
+          <% if (recent.length === 0) { %>
+            <tr><td colspan="4" class="text-center text-muted py-3">لسه مفيش حركات مسجلة</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

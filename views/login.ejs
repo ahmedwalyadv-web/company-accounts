@@ -1,0 +1,31 @@
+<%- include('partials/header', { title: 'تسجيل الدخول' }) %>
+<div class="login-wrapper">
+  <div class="card login-card shadow-lg">
+    <div class="card-body p-4">
+      <div class="text-center mb-4">
+        <% if (company.logo_data) { %>
+          <img src="<%= company.logo_data %>" style="height:60px" class="mb-2">
+        <% } else { %>
+          <i class="fa-solid fa-building-columns fa-3x text-primary mb-2"></i>
+        <% } %>
+        <h4 class="fw-bold mb-0"><%= company.name %></h4>
+        <small class="text-muted">نظام الحسابات الداخلي</small>
+      </div>
+      <% if (error) { %>
+        <div class="alert alert-danger py-2"><%= error %></div>
+      <% } %>
+      <form method="POST" action="/login">
+        <div class="mb-3">
+          <label class="form-label">اسم المستخدم</label>
+          <input type="text" name="username" class="form-control" required autofocus>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">كلمة المرور</label>
+          <input type="password" name="password" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">دخول</button>
+      </form>
+    </div>
+  </div>
+</div>
+<%- include('partials/footer') %>

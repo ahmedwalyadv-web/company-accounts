@@ -1,0 +1,21 @@
+{
+  "name": "company-accounts",
+  "version": "1.0.0",
+  "description": "نظام حسابات داخلي للشركة - مشتريات، مصروفات، مبيعات، خزنة، شجرة حسابات وصلاحيات",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "db:init": "node db/init.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "connect-pg-simple": "^9.0.1",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "multer": "^2.2.0",
+    "pg": "^8.11.5"
+  }
+}

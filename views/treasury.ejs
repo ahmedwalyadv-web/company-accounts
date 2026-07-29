@@ -1,0 +1,111 @@
+<%- include('partials/header', { title: 'الخزنة' }) %>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="fw-bold mb-0">الخزنة</h4>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#adjustModal">
+    <i class="fa-solid fa-plus"></i> تسوية رصيد
+  </button>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="stat-card bg-treasury">
+      <span>الرصيد الحالي</span>
+      <h3><%= Number(balance).toLocaleString('ar-EG') %></h3>
+      <small><%= company.currency %></small>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card bg-sales">
+      <span>إجمالي الوارد</span>
+      <h3><%= Number(totals.total_in).toLocaleString('ar-EG') %></h3>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card bg-expenses">
+      <span>إجمالي المنصرف</span>
+      <h3><%= Number(totals.total_out).toLocaleString('ar-EG') %></h3>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">حركة الخزنة</h6>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>التاريخ</th>
+            <th>النوع</th>
+            <th>المصدر</th>
+            <th>الوصف</th>
+            <th>المبلغ</th>
+            <th>بواسطة</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% const modLabels = { purchases: 'مشتريات', expenses: 'مصروفات', sales: 'مبيعات', receipts: 'استلام فلوس', adjustment: 'تسوية' }; %>
+          <% ledger.forEach(l => { %>
+            <tr>
+              <td><%= new Date(l.entry_date).toLocaleDateString('ar-EG') %></td>
+              <td>
+                <% if (l.direction === 'in') { %>
+                  <span class="badge bg-success">وارد</span>
+                <% } else { %>
+                  <span class="badge bg-danger">منصرف</span>
+                <% } %>
+              </td>
+              <td><%= modLabels[l.source_module] || l.source_module %></td>
+              <td><%= l.description || '-' %></td>
+              <td class="fw-bold"><%= Number(l.amount).toLocaleString('ar-EG') %> <%= company.currency %></td>
+              <td><small class="text-muted"><%= l.created_by_name || '-' %></small></td>
+            </tr>
+          <% }) %>
+          <% if (ledger.length === 0) { %>
+            <tr><td colspan="6" class="text-center text-muted py-4">لسه مفيش حركات</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="adjustModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="/treasury/adjust">
+        <div class="modal-header">
+          <h5 class="modal-title">تسوية رصيد الخزنة</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">التاريخ</label>
+            <input type="date" name="entry_date" class="form-control" required value="<%= new Date().toISOString().slice(0,10) %>">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">النوع</label>
+            <select name="direction" class="form-select">
+              <option value="in">إضافة رصيد (وارد)</option>
+              <option value="out">خصم رصيد (منصرف)</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">المبلغ</label>
+            <input type="number" step="0.01" min="0" name="amount" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">الوصف</label>
+            <input type="text" name="description" class="form-control" placeholder="مثال: رصيد أول المدة">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">حفظ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,62 @@
+<%- include('partials/header', { title: 'إعدادات الشركة' }) %>
+
+<h4 class="fw-bold mb-4">إعدادات الشركة</h4>
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-3">بيانات الشركة</h6>
+        <form method="POST" action="/settings" enctype="multipart/form-data">
+          <div class="mb-3 text-center">
+            <img src="<%= companyRow.logo_data || 'https://via.placeholder.com/90?text=Logo' %>" class="mb-2" style="height:90px;width:90px;object-fit:contain;border-radius:12px;border:1px solid #eee;">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">شعار الشركة (لوجو)</label>
+            <input type="file" name="logo" accept="image/*" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">اسم الشركة</label>
+            <input type="text" name="name" class="form-control" required value="<%= companyRow.name %>">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">العملة</label>
+            <input type="text" name="currency" class="form-control" required value="<%= companyRow.currency %>">
+          </div>
+          <button type="submit" class="btn btn-primary">حفظ</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-3">أسباب الصرف (تستخدم في المصروفات)</h6>
+        <form method="POST" action="/settings/reasons" class="d-flex gap-2 mb-3">
+          <input type="text" name="name" class="form-control" placeholder="سبب جديد.. مثال: مرتبات" required>
+          <button type="submit" class="btn btn-primary text-nowrap">إضافة</button>
+        </form>
+        <ul class="list-group">
+          <% reasons.forEach(r => { %>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span class="<%= r.active ? '' : 'text-muted text-decoration-line-through' %>"><%= r.name %></span>
+              <div class="d-flex gap-1">
+                <form action="/settings/reasons/<%= r.id %>/toggle" method="POST">
+                  <button class="btn btn-sm <%= r.active ? 'btn-outline-secondary' : 'btn-outline-success' %>">
+                    <%= r.active ? 'إخفاء' : 'إظهار' %>
+                  </button>
+                </form>
+                <form action="/settings/reasons/<%= r.id %>/delete" method="POST" onsubmit="return confirm('حذف السبب؟');">
+                  <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+                </form>
+              </div>
+            </li>
+          <% }) %>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

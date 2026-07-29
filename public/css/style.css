@@ -1,0 +1,64 @@
+body {
+  font-family: 'Cairo', sans-serif;
+  background-color: #f4f6f9;
+}
+
+.app-navbar {
+  background: linear-gradient(90deg, #14213d, #1f3a63);
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+}
+
+.brand-logo {
+  height: 32px;
+  width: 32px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.card {
+  border: none;
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.06);
+}
+
+.stat-card {
+  border-radius: 16px;
+  color: #fff;
+  padding: 22px;
+}
+
+.stat-card h3 { font-size: 1.9rem; font-weight: 700; margin: 0; }
+.stat-card span { opacity: .9; }
+
+.bg-purchases { background: linear-gradient(135deg,#6a3de8,#8e6ff0); }
+.bg-expenses { background: linear-gradient(135deg,#e8543d,#f28b73); }
+.bg-sales { background: linear-gradient(135deg,#1fae6a,#4fd18b); }
+.bg-receipts { background: linear-gradient(135deg,#0c8ce9,#54b3f5); }
+.bg-treasury { background: linear-gradient(135deg,#c9971f,#e6b74a); }
+
+.table thead { background-color: #eef1f7; }
+
+.login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg,#14213d,#1f3a63);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  border-radius: 18px;
+  padding: 8px;
+}
+
+.btn-primary {
+  background-color: #1f3a63;
+  border-color: #1f3a63;
+}
+.btn-primary:hover {
+  background-color: #14213d;
+  border-color: #14213d;
+}

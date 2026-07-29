@@ -1,0 +1,85 @@
+<%- include('partials/header', { title: 'الأدوار والصلاحيات' }) %>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="fw-bold mb-0">الأدوار والصلاحيات</h4>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newRoleModal">
+    <i class="fa-solid fa-plus"></i> دور جديد
+  </button>
+</div>
+
+<% if (error) { %><div class="alert alert-danger"><%= error %></div><% } %>
+
+<div class="row g-3">
+  <% roles.forEach(role => { %>
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold mb-0">
+              <%= role.name %>
+              <% if (role.is_admin) { %><span class="badge bg-dark">صلاحيات كاملة</span><% } %>
+            </h6>
+            <% if (!role.is_admin) { %>
+            <form action="/roles/<%= role.id %>/delete" method="POST" onsubmit="return confirm('متأكد من حذف الدور؟');">
+              <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+            </form>
+            <% } %>
+          </div>
+          <form action="/roles/<%= role.id %>" method="POST">
+            <div class="row row-cols-2 g-2 mb-3">
+              <% MODULES.forEach(m => { %>
+                <div class="col">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="permissions" value="<%= m.key %>"
+                      id="perm-<%= role.id %>-<%= m.key %>"
+                      <%= (role.is_admin || role.permissions.includes(m.key)) ? 'checked' : '' %>
+                      <%= role.is_admin ? 'disabled' : '' %>>
+                    <label class="form-check-label" for="perm-<%= role.id %>-<%= m.key %>"><%= m.label %></label>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+            <% if (!role.is_admin) { %>
+              <button type="submit" class="btn btn-sm btn-primary">حفظ الصلاحيات</button>
+            <% } %>
+          </form>
+        </div>
+      </div>
+    </div>
+  <% }) %>
+</div>
+
+<div class="modal fade" id="newRoleModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="/roles">
+        <div class="modal-header">
+          <h5 class="modal-title">دور جديد</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">اسم الدور</label>
+            <input type="text" name="name" class="form-control" required placeholder="مثال: مسؤول مخازن">
+          </div>
+          <label class="form-label">الصلاحيات</label>
+          <div class="row row-cols-2 g-2">
+            <% MODULES.forEach(m => { %>
+              <div class="col">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="permissions" value="<%= m.key %>" id="new-<%= m.key %>">
+                  <label class="form-check-label" for="new-<%= m.key %>"><%= m.label %></label>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">حفظ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

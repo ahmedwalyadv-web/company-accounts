@@ -1,0 +1,121 @@
+<%- include('partials/header', { title: 'المستخدمين' }) %>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="fw-bold mb-0">المستخدمين</h4>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newUserModal">
+    <i class="fa-solid fa-user-plus"></i> إضافة مستخدم
+  </button>
+</div>
+
+<% if (error) { %><div class="alert alert-danger"><%= error %></div><% } %>
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>اسم المستخدم</th>
+            <th>الاسم بالكامل</th>
+            <th>الدور</th>
+            <th>الحالة</th>
+            <th>إجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% users.forEach(u => { %>
+            <tr>
+              <td><%= u.username %></td>
+              <td><%= u.full_name %></td>
+              <td>
+                <form action="/users/<%= u.id %>/role" method="POST" class="d-flex gap-1">
+                  <select name="role_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <% roles.forEach(r => { %>
+                      <option value="<%= r.id %>" <%= r.id === u.role_id ? 'selected' : '' %>><%= r.name %></option>
+                    <% }) %>
+                  </select>
+                </form>
+              </td>
+              <td>
+                <form action="/users/<%= u.id %>/toggle" method="POST">
+                  <button class="btn btn-sm <%= u.active ? 'btn-success' : 'btn-secondary' %>">
+                    <%= u.active ? 'مفعّل' : 'معطّل' %>
+                  </button>
+                </form>
+              </td>
+              <td class="text-nowrap">
+                <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#reset-<%= u.id %>">
+                  <i class="fa-solid fa-key"></i>
+                </button>
+                <% if (u.id !== currentUser.id) { %>
+                <form action="/users/<%= u.id %>/delete" method="POST" class="d-inline" onsubmit="return confirm('متأكد من حذف المستخدم؟');">
+                  <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+                </form>
+                <% } %>
+              </td>
+            </tr>
+
+            <div class="modal fade" id="reset-<%= u.id %>" tabindex="-1">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <form method="POST" action="/users/<%= u.id %>/reset-password">
+                    <div class="modal-header">
+                      <h6 class="modal-title">تغيير كلمة مرور <%= u.full_name %></h6>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                      <input type="password" name="new_password" class="form-control" placeholder="كلمة المرور الجديدة" required minlength="4">
+                    </div>
+                    <div class="modal-footer">
+                      <button type="submit" class="btn btn-primary">حفظ</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="newUserModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="/users">
+        <div class="modal-header">
+          <h5 class="modal-title">إضافة مستخدم جديد</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">الاسم بالكامل</label>
+            <input type="text" name="full_name" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">اسم المستخدم (بالإنجليزي)</label>
+            <input type="text" name="username" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">كلمة المرور</label>
+            <input type="password" name="password" class="form-control" required minlength="4">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">الدور / الصلاحية</label>
+            <select name="role_id" class="form-select" required>
+              <% roles.forEach(r => { %>
+                <option value="<%= r.id %>"><%= r.name %></option>
+              <% }) %>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">حفظ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

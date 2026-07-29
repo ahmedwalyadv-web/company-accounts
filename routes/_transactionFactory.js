@@ -29,7 +29,7 @@ function createTransactionRouter({ table, moduleKey, direction, pageTitle, party
   });
 
   router.get('/new', async (req, res) => {
-    const accounts = await pool.query(`SELECT * FROM accounts ORDER BY name`);
+    const accounts = (await pool.query(`SELECT * FROM accounts ORDER BY name`)).rows;
     let reasons = [];
     if (useReasonDropdown) {
       const r = await pool.query(`SELECT * FROM expense_reasons WHERE active = true ORDER BY name`);
@@ -77,7 +77,7 @@ function createTransactionRouter({ table, moduleKey, direction, pageTitle, party
   router.get('/:id/edit', async (req, res) => {
     const result = await pool.query(`SELECT * FROM ${table} WHERE id = $1`, [req.params.id]);
     if (!result.rows.length) return res.redirect('/' + moduleKey);
-    const accounts = await pool.query(`SELECT * FROM accounts ORDER BY name`);
+    const accounts = (await pool.query(`SELECT * FROM accounts ORDER BY name`)).rows;
     let reasons = [];
     if (useReasonDropdown) {
       const r = await pool.query(`SELECT * FROM expense_reasons WHERE active = true ORDER BY name`);

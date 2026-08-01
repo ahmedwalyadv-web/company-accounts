@@ -22,9 +22,9 @@ router.get('/', asyncHandler(async (req, res) => {
        WHERE entry_date BETWEEN $1 AND $2 GROUP BY reason ORDER BY total DESC`,
       [from, to]
     ),
-    pool.query(`SELECT entry_date, party, amount, description FROM purchases WHERE entry_date BETWEEN $1 AND $2 ORDER BY entry_date`, [from, to]),
+    pool.query(`SELECT entry_date, party, amount, description, payment_method FROM purchases WHERE entry_date BETWEEN $1 AND $2 ORDER BY entry_date`, [from, to]),
     pool.query(`SELECT entry_date, party, reason, amount, description FROM expenses WHERE entry_date BETWEEN $1 AND $2 ORDER BY entry_date`, [from, to]),
-    pool.query(`SELECT entry_date, party, amount, description FROM sales WHERE entry_date BETWEEN $1 AND $2 ORDER BY entry_date`, [from, to]),
+    pool.query(`SELECT entry_date, party, amount, description, payment_method FROM sales WHERE entry_date BETWEEN $1 AND $2 ORDER BY entry_date`, [from, to]),
     pool.query(`SELECT entry_date, party, amount, description FROM receipts WHERE entry_date BETWEEN $1 AND $2 ORDER BY entry_date`, [from, to])
   ]);
 

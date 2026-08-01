@@ -67,6 +67,8 @@ CREATE TABLE IF NOT EXISTS purchases (
   amount NUMERIC(14,2) NOT NULL,
   account_id INTEGER REFERENCES accounts(id),
   description TEXT,
+  payment_method TEXT NOT NULL DEFAULT 'cash', -- cash / visa / network
+  paid_by_user_id INTEGER REFERENCES users(id), -- مين اللي دفع فعليًا للمورد
   created_by INTEGER REFERENCES users(id),
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -89,8 +91,10 @@ CREATE TABLE IF NOT EXISTS sales (
   party TEXT NOT NULL, -- العميل
   reason TEXT,
   amount NUMERIC(14,2) NOT NULL,
-  account_id INTEGER REFERENCES accounts(id),
+  account_id INTEGER REFERENCES accounts(id), -- الحساب البنكي لو الدفع حساب بنكي
   description TEXT,
+  payment_method TEXT NOT NULL DEFAULT 'cash', -- cash / bank
+  received_by_user_id INTEGER REFERENCES users(id), -- مين استلم الكاش (لو الدفع كاش)
   created_by INTEGER REFERENCES users(id),
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -132,6 +136,12 @@ CREATE TABLE IF NOT EXISTS treasury_reconciliations (
   created_by INTEGER REFERENCES users(id),
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+-- تحديثات على جداول موجودة بالفعل (آمنة تتكرر أي عدد مرات)
+ALTER TABLE purchases ADD COLUMN IF NOT EXISTS payment_method TEXT NOT NULL DEFAULT 'cash';
+ALTER TABLE purchases ADD COLUMN IF NOT EXISTS paid_by_user_id INTEGER REFERENCES users(id);
+ALTER TABLE sales ADD COLUMN IF NOT EXISTS payment_method TEXT NOT NULL DEFAULT 'cash';
+ALTER TABLE sales ADD COLUMN IF NOT EXISTS received_by_user_id INTEGER REFERENCES users(id);
 
 CREATE TABLE IF NOT EXISTS "session" (
   sid VARCHAR NOT NULL COLLATE "default" PRIMARY KEY,

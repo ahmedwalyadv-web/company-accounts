@@ -1,11 +1,14 @@
 <%- include('../partials/header', { title: title }) %>
 
+<% const isPurchases = moduleKey === 'purchases'; %>
+<% const isSales = moduleKey === 'sales'; %>
+
 <div class="row justify-content-center">
   <div class="col-lg-7">
     <div class="card">
       <div class="card-body p-4">
         <h5 class="fw-bold mb-4"><%= row ? 'تعديل حركة' : 'إضافة حركة جديدة' %> — <%= pageTitle %></h5>
-        <form method="POST" action="<%= row ? '/' + moduleKey + '/' + row.id : '/' + moduleKey %>">
+        <form method="POST" action="<%= row ? '/' + moduleKey + '/' + row.id : '/' + moduleKey %>" id="txForm">
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label">التاريخ</label>
@@ -34,15 +37,72 @@
               <input type="number" step="0.01" min="0" name="amount" class="form-control" required value="<%= row ? row.amount : '' %>">
             </div>
 
-            <div class="col-md-6">
-              <label class="form-label">الحساب (اختياري)</label>
-              <select name="account_id" class="form-select">
-                <option value="">-- بدون --</option>
-                <% accounts.forEach(a => { %>
-                  <option value="<%= a.id %>" <%= row && row.account_id === a.id ? 'selected' : '' %>><%= a.name %></option>
-                <% }) %>
-              </select>
-            </div>
+            <% if (isPurchases) { %>
+              <div class="col-md-6">
+                <label class="form-label">طريقة الدفع للمورد</label>
+                <select name="payment_method" class="form-select" required>
+                  <% paymentMethods.forEach(m => { %>
+                    <option value="<%= m.value %>" <%= row && row.payment_method === m.value ? 'selected' : '' %>><%= m.label %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">مين اللي دفع</label>
+                <select name="paid_by_user_id" class="form-select">
+                  <option value="">-- اختر --</option>
+                  <% users.forEach(u => { %>
+                    <option value="<%= u.id %>" <%= row && row.paid_by_user_id === u.id ? 'selected' : (!row && u.id === currentUser.id ? 'selected' : '') %>><%= u.full_name %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">الحساب في شجرة الحسابات (اختياري)</label>
+                <select name="account_id" class="form-select">
+                  <option value="">-- بدون --</option>
+                  <% accounts.forEach(a => { %>
+                    <option value="<%= a.id %>" <%= row && row.account_id === a.id ? 'selected' : '' %>><%= a.name %></option>
+                  <% }) %>
+                </select>
+              </div>
+            <% } else if (isSales) { %>
+              <div class="col-md-6">
+                <label class="form-label">الفلوس وصلت إزاي</label>
+                <select name="payment_method" id="paymentMethod" class="form-select" required>
+                  <% paymentMethods.forEach(m => { %>
+                    <option value="<%= m.value %>" <%= row && row.payment_method === m.value ? 'selected' : '' %>><%= m.label %></option>
+                  <% }) %>
+                </select>
+              </div>
+              <div class="col-md-6 payment-field" data-method="bank">
+                <label class="form-label">أي حساب بنكي</label>
+                <select name="account_id" class="form-select">
+                  <option value="">-- اختر الحساب البنكي --</option>
+                  <% accounts.forEach(a => { %>
+                    <option value="<%= a.id %>" <%= row && row.account_id === a.id ? 'selected' : '' %>><%= a.name %></option>
+                  <% }) %>
+                </select>
+                <small class="text-muted">لو مش لاقي البنك في القائمة، ضيفه الأول من شجرة الحسابات</small>
+              </div>
+              <div class="col-md-6 payment-field" data-method="cash">
+                <label class="form-label">مين استلم الكاش</label>
+                <select name="received_by_user_id" class="form-select">
+                  <option value="">-- اختر --</option>
+                  <% users.forEach(u => { %>
+                    <option value="<%= u.id %>" <%= row && row.received_by_user_id === u.id ? 'selected' : (!row && u.id === currentUser.id ? 'selected' : '') %>><%= u.full_name %></option>
+                  <% }) %>
+                </select>
+              </div>
+            <% } else { %>
+              <div class="col-md-6">
+                <label class="form-label">الحساب (اختياري)</label>
+                <select name="account_id" class="form-select">
+                  <option value="">-- بدون --</option>
+                  <% accounts.forEach(a => { %>
+                    <option value="<%= a.id %>" <%= row && row.account_id === a.id ? 'selected' : '' %>><%= a.name %></option>
+                  <% }) %>
+                </select>
+              </div>
+            <% } %>
 
             <div class="col-12">
               <label class="form-label">وصف / ملاحظات</label>
@@ -59,5 +119,22 @@
     </div>
   </div>
 </div>
+
+<% if (isSales) { %>
+<script>
+  (function () {
+    var select = document.getElementById('paymentMethod');
+    var fields = document.querySelectorAll('.payment-field');
+    function toggle() {
+      var method = select.value;
+      fields.forEach(function (el) {
+        el.style.display = (el.dataset.method === method) ? '' : 'none';
+      });
+    }
+    select.addEventListener('change', toggle);
+    toggle();
+  })();
+</script>
+<% } %>
 
 <%- include('../partials/footer') %>

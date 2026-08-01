@@ -100,7 +100,8 @@
   </div>
 </div>
 
-<% function detailTable(title, list, showReason) { %>
+<% const methodLabels = { cash: 'كاش', visa: 'فيزا', network: 'شبكة', bank: 'حساب بنكي' }; %>
+<% function detailTable(title, list, showReason, showMethod) { %>
   <div class="card mb-4">
     <div class="card-body">
       <h6 class="fw-bold mb-3"><%= title %></h6>
@@ -108,7 +109,7 @@
         <table class="table table-sm">
           <thead>
             <tr>
-              <th>التاريخ</th><th>الطرف</th><% if (showReason) { %><th>السبب</th><% } %><th>المبلغ</th><th>الوصف</th>
+              <th>التاريخ</th><th>الطرف</th><% if (showReason) { %><th>السبب</th><% } %><% if (showMethod) { %><th>طريقة الدفع</th><% } %><th>المبلغ</th><th>الوصف</th>
             </tr>
           </thead>
           <tbody>
@@ -117,12 +118,13 @@
                 <td><%= new Date(r.entry_date).toLocaleDateString('ar-EG') %></td>
                 <td><%= r.party %></td>
                 <% if (showReason) { %><td><%= r.reason || '-' %></td><% } %>
+                <% if (showMethod) { %><td><%= methodLabels[r.payment_method] || r.payment_method %></td><% } %>
                 <td><%= Number(r.amount).toLocaleString('ar-EG') %></td>
                 <td><%= r.description || '-' %></td>
               </tr>
             <% }) %>
             <% if (list.length === 0) { %>
-              <tr><td colspan="<%= showReason ? 5 : 4 %>" class="text-center text-muted">لا يوجد حركات</td></tr>
+              <tr><td colspan="<%= 4 + (showReason?1:0) + (showMethod?1:0) %>" class="text-center text-muted">لا يوجد حركات</td></tr>
             <% } %>
           </tbody>
         </table>
@@ -132,9 +134,9 @@
 <% } %>
 
 <%- '' %>
-<% detailTable('تفاصيل المشتريات', purchasesList, false) %>
-<% detailTable('تفاصيل المصروفات', expensesList, true) %>
-<% detailTable('تفاصيل المبيعات', salesList, false) %>
-<% detailTable('تفاصيل استلام الفلوس', receiptsList, false) %>
+<% detailTable('تفاصيل المشتريات', purchasesList, false, true) %>
+<% detailTable('تفاصيل المصروفات', expensesList, true, false) %>
+<% detailTable('تفاصيل المبيعات', salesList, false, true) %>
+<% detailTable('تفاصيل استلام الفلوس', receiptsList, false, false) %>
 
 <%- include('partials/footer') %>

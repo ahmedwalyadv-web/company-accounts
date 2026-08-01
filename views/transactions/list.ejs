@@ -1,5 +1,14 @@
 <%- include('../partials/header', { title: pageTitle }) %>
 
+<% const methodLabels = { cash: 'كاش', visa: 'فيزا', network: 'شبكة', bank: 'حساب بنكي' }; %>
+<% const showReason = moduleKey === 'expenses'; %>
+<% const showPurchasePay = moduleKey === 'purchases'; %>
+<% const showSalePay = moduleKey === 'sales'; %>
+<% let colCount = 2 + 4 + 1; // التاريخ+الطرف + (الحساب/المبلغ/الوصف/بواسطة) + الإجراءات %>
+<% if (showReason) colCount += 1; %>
+<% if (showPurchasePay || showSalePay) colCount += 2; %>
+<% if (showSalePay) colCount -= 1; // مش هنعرض عمود "الحساب" لوحده في المبيعات، لإنه بيتعرض جوه عمود التحصيل %>
+
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4 class="fw-bold mb-0"><%= pageTitle %></h4>
   <a href="/<%= moduleKey %>/new" class="btn btn-primary"><i class="fa-solid fa-plus"></i> إضافة حركة جديدة</a>
@@ -11,7 +20,7 @@
 
 <div class="card mb-3">
   <div class="card-body d-flex justify-content-between align-items-center">
-    <span class="text-muted">إجمالي <%= pageTitle %></span>
+    <span class="text-muted">إجمالي <%= pageTitle %> (الشهر الحالي المفتوح)</span>
     <h5 class="fw-bold mb-0"><%= Number(total).toLocaleString('ar-EG') %> <%= company.currency %></h5>
   </div>
 </div>
@@ -24,8 +33,10 @@
           <tr>
             <th>التاريخ</th>
             <th><%= partyLabel %></th>
-            <% if (moduleKey === 'expenses') { %><th>السبب</th><% } %>
-            <th>الحساب</th>
+            <% if (showReason) { %><th>السبب</th><% } %>
+            <% if (showPurchasePay) { %><th>طريقة الدفع</th><th>دفعها</th><% } %>
+            <% if (showSalePay) { %><th>طريقة التحصيل</th><th>استلمها / الحساب</th><% } %>
+            <% if (!showSalePay) { %><th>الحساب</th><% } %>
             <th>المبلغ</th>
             <th>الوصف</th>
             <th>بواسطة</th>
@@ -37,8 +48,16 @@
             <tr>
               <td><%= new Date(r.entry_date).toLocaleDateString('ar-EG') %></td>
               <td><%= r.party %></td>
-              <% if (moduleKey === 'expenses') { %><td><%= r.reason || '-' %></td><% } %>
-              <td><%= r.account_name || '-' %></td>
+              <% if (showReason) { %><td><%= r.reason || '-' %></td><% } %>
+              <% if (showPurchasePay) { %>
+                <td><span class="badge bg-secondary"><%= methodLabels[r.payment_method] || r.payment_method %></span></td>
+                <td><%= r.paid_by_name || '-' %></td>
+              <% } %>
+              <% if (showSalePay) { %>
+                <td><span class="badge bg-secondary"><%= methodLabels[r.payment_method] || r.payment_method %></span></td>
+                <td><%= r.payment_method === 'bank' ? (r.account_name || '-') : (r.received_by_name || '-') %></td>
+              <% } %>
+              <% if (!showSalePay) { %><td><%= r.account_name || '-' %></td><% } %>
               <td class="fw-bold"><%= Number(r.amount).toLocaleString('ar-EG') %> <%= company.currency %></td>
               <td><%= r.description || '-' %></td>
               <td><small class="text-muted"><%= r.created_by_name || '-' %></small></td>
@@ -51,7 +70,7 @@
             </tr>
           <% }) %>
           <% if (rows.length === 0) { %>
-            <tr><td colspan="8" class="text-center text-muted py-4">لسه مفيش حركات مسجلة</td></tr>
+            <tr><td colspan="<%= colCount %>" class="text-center text-muted py-4">لسه مفيش حركات مسجلة في الشهر الحالي</td></tr>
           <% } %>
         </tbody>
       </table>

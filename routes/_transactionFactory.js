@@ -18,6 +18,9 @@ function createTransactionRouter({ table, moduleKey, direction, pageTitle, party
        FROM ${table} t
        LEFT JOIN users u ON t.created_by = u.id
        LEFT JOIN accounts a ON t.account_id = a.id
+       WHERE NOT EXISTS (
+         SELECT 1 FROM monthly_closings mc WHERE mc.period = date_trunc('month', t.entry_date)::date
+       )
        ORDER BY t.entry_date DESC, t.id DESC LIMIT 300`
     );
     const totalResult = await pool.query(`SELECT COALESCE(SUM(amount),0) AS total FROM ${table}`);

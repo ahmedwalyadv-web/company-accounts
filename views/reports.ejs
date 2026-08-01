@@ -1,0 +1,140 @@
+<%- include('partials/header', { title: 'التقارير' }) %>
+
+<div class="d-flex justify-content-between align-items-center mb-3 no-print">
+  <h4 class="fw-bold mb-0">التقارير</h4>
+  <button onclick="window.print()" class="btn btn-primary"><i class="fa-solid fa-print"></i> طباعة التقرير</button>
+</div>
+
+<div class="card mb-4 no-print">
+  <div class="card-body">
+    <form method="GET" action="/reports" class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label">من تاريخ</label>
+        <input type="date" name="from" class="form-control" value="<%= from %>">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">إلى تاريخ</label>
+        <input type="date" name="to" class="form-control" value="<%= to %>">
+      </div>
+      <div class="col-md-4">
+        <button type="submit" class="btn btn-primary w-100">عرض</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="text-center mb-4 d-none d-print-block">
+  <h4 class="fw-bold"><%= company.name %></h4>
+  <p class="mb-0">تقرير مالي من <%= from %> إلى <%= to %></p>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="stat-card bg-receipts">
+      <span>إجمالي الوارد (مبيعات + استلام فلوس)</span>
+      <h3><%= Number(totalIn).toLocaleString('ar-EG') %></h3>
+      <small><%= company.currency %></small>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card bg-expenses">
+      <span>إجمالي المنصرف (مشتريات + مصروفات)</span>
+      <h3><%= Number(totalOut).toLocaleString('ar-EG') %></h3>
+      <small><%= company.currency %></small>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card <%= netProfit >= 0 ? 'bg-sales' : 'bg-expenses' %>">
+      <span>صافي الربح</span>
+      <h3><%= Number(netProfit).toLocaleString('ar-EG') %></h3>
+      <small><%= company.currency %></small>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card"><div class="card-body">
+      <div class="text-muted">المشتريات</div>
+      <div class="fw-bold fs-5"><%= Number(purchases.total).toLocaleString('ar-EG') %></div>
+      <small class="text-muted"><%= purchases.cnt %> حركة</small>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card"><div class="card-body">
+      <div class="text-muted">المصروفات</div>
+      <div class="fw-bold fs-5"><%= Number(expenses.total).toLocaleString('ar-EG') %></div>
+      <small class="text-muted"><%= expenses.cnt %> حركة</small>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card"><div class="card-body">
+      <div class="text-muted">المبيعات</div>
+      <div class="fw-bold fs-5"><%= Number(sales.total).toLocaleString('ar-EG') %></div>
+      <small class="text-muted"><%= sales.cnt %> حركة</small>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card"><div class="card-body">
+      <div class="text-muted">استلام فلوس</div>
+      <div class="fw-bold fs-5"><%= Number(receipts.total).toLocaleString('ar-EG') %></div>
+      <small class="text-muted"><%= receipts.cnt %> حركة</small>
+    </div></div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">المصروفات حسب السبب</h6>
+    <table class="table table-sm">
+      <thead><tr><th>السبب</th><th>الإجمالي</th></tr></thead>
+      <tbody>
+        <% expenseByReason.forEach(r => { %>
+          <tr><td><%= r.reason || 'بدون سبب' %></td><td><%= Number(r.total).toLocaleString('ar-EG') %> <%= company.currency %></td></tr>
+        <% }) %>
+        <% if (expenseByReason.length === 0) { %>
+          <tr><td colspan="2" class="text-center text-muted">لا يوجد مصروفات في الفترة دي</td></tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<% function detailTable(title, list, showReason) { %>
+  <div class="card mb-4">
+    <div class="card-body">
+      <h6 class="fw-bold mb-3"><%= title %></h6>
+      <div class="table-responsive">
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>التاريخ</th><th>الطرف</th><% if (showReason) { %><th>السبب</th><% } %><th>المبلغ</th><th>الوصف</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% list.forEach(r => { %>
+              <tr>
+                <td><%= new Date(r.entry_date).toLocaleDateString('ar-EG') %></td>
+                <td><%= r.party %></td>
+                <% if (showReason) { %><td><%= r.reason || '-' %></td><% } %>
+                <td><%= Number(r.amount).toLocaleString('ar-EG') %></td>
+                <td><%= r.description || '-' %></td>
+              </tr>
+            <% }) %>
+            <% if (list.length === 0) { %>
+              <tr><td colspan="<%= showReason ? 5 : 4 %>" class="text-center text-muted">لا يوجد حركات</td></tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+<% } %>
+
+<%- '' %>
+<% detailTable('تفاصيل المشتريات', purchasesList, false) %>
+<% detailTable('تفاصيل المصروفات', expensesList, true) %>
+<% detailTable('تفاصيل المبيعات', salesList, false) %>
+<% detailTable('تفاصيل استلام الفلوس', receiptsList, false) %>
+
+<%- include('partials/footer') %>

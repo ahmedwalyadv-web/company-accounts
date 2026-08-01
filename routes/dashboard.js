@@ -1,10 +1,11 @@
 const express = require('express');
 const pool = require('../db/pool');
 const { requireLogin } = require('../middleware/auth');
+const asyncHandler = require('../middleware/asyncHandler');
 
 const router = express.Router();
 
-router.get('/', requireLogin, async (req, res) => {
+router.get('/', requireLogin, asyncHandler(async (req, res) => {
   const [purchases, expenses, sales, receipts, treasuryBalance, recent] = await Promise.all([
     pool.query(`SELECT COALESCE(SUM(amount),0) AS total FROM purchases WHERE entry_date >= date_trunc('month', CURRENT_DATE)`),
     pool.query(`SELECT COALESCE(SUM(amount),0) AS total FROM expenses WHERE entry_date >= date_trunc('month', CURRENT_DATE)`),
@@ -35,6 +36,6 @@ router.get('/', requireLogin, async (req, res) => {
     },
     recent: recent.rows
   });
-});
+}));
 
 module.exports = router;

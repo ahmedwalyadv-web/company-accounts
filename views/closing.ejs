@@ -1,0 +1,93 @@
+<%- include('partials/header', { title: 'التقفيل الشهري' }) %>
+
+<h4 class="fw-bold mb-4">التقفيل الشهري</h4>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">اختيار شهر</h6>
+    <form method="GET" action="/closing" class="row g-3 align-items-end mb-3">
+      <div class="col-md-4">
+        <label class="form-label">الشهر</label>
+        <input type="month" name="month" class="form-control" value="<%= month %>" required>
+      </div>
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-outline-primary w-100">معاينة</button>
+      </div>
+    </form>
+
+    <% if (alreadyClosed) { %>
+      <div class="alert alert-info mb-0">
+        <i class="fa-solid fa-lock"></i> الشهر ده مقفول بالفعل. لو محتاج تعدل فيه، لازم تعمل "إعادة فتح" من جدول الشهور المقفولة تحت (متاح للأدمن بس).
+      </div>
+    <% } else if (preview) { %>
+      <div class="border rounded p-3 mb-3">
+        <h6 class="fw-bold mb-3">معاينة إجماليات الشهر قبل التقفيل</h6>
+        <div class="row g-3 mb-3">
+          <div class="col-md-3"><div class="text-muted">المشتريات</div><div class="fw-bold"><%= Number(preview.total_purchases).toLocaleString('ar-EG') %></div></div>
+          <div class="col-md-3"><div class="text-muted">المصروفات</div><div class="fw-bold"><%= Number(preview.total_expenses).toLocaleString('ar-EG') %></div></div>
+          <div class="col-md-3"><div class="text-muted">المبيعات</div><div class="fw-bold"><%= Number(preview.total_sales).toLocaleString('ar-EG') %></div></div>
+          <div class="col-md-3"><div class="text-muted">استلام فلوس</div><div class="fw-bold"><%= Number(preview.total_receipts).toLocaleString('ar-EG') %></div></div>
+        </div>
+        <div class="mb-3">
+          <span class="text-muted">صافي الربح المتوقع: </span>
+          <span class="fw-bold fs-5"><%= Number(preview.net_profit).toLocaleString('ar-EG') %> <%= company.currency %></span>
+        </div>
+        <form method="POST" action="/closing/close" onsubmit="return confirm('متأكد إنك عايز تقفل الشهر ده؟ بعد التقفيل مش هينفع حد يضيف أو يعدل أو يحذف حركات فيه إلا لو الأدمن فتحه تاني.');">
+          <input type="hidden" name="month" value="<%= month %>">
+          <div class="mb-3">
+            <label class="form-label">ملاحظات (اختياري)</label>
+            <textarea name="notes" class="form-control" rows="2"></textarea>
+          </div>
+          <button type="submit" class="btn btn-danger"><i class="fa-solid fa-lock"></i> تأكيد تقفيل الشهر</button>
+        </form>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">سجل الشهور المقفولة</h6>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>الشهر</th>
+            <th>المشتريات</th>
+            <th>المصروفات</th>
+            <th>المبيعات</th>
+            <th>استلام فلوس</th>
+            <th>صافي الربح</th>
+            <th>اتقفل بواسطة</th>
+            <% if (currentUser.is_admin) { %><th></th><% } %>
+          </tr>
+        </thead>
+        <tbody>
+          <% closings.forEach(c => { %>
+            <tr>
+              <td><%= new Date(c.period).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long' }) %></td>
+              <td><%= Number(c.total_purchases).toLocaleString('ar-EG') %></td>
+              <td><%= Number(c.total_expenses).toLocaleString('ar-EG') %></td>
+              <td><%= Number(c.total_sales).toLocaleString('ar-EG') %></td>
+              <td><%= Number(c.total_receipts).toLocaleString('ar-EG') %></td>
+              <td class="fw-bold"><%= Number(c.net_profit).toLocaleString('ar-EG') %></td>
+              <td><small class="text-muted"><%= c.closed_by_name || '-' %></small></td>
+              <% if (currentUser.is_admin) { %>
+                <td>
+                  <form action="/closing/<%= c.id %>/reopen" method="POST" onsubmit="return confirm('متأكد من إعادة فتح الشهر ده؟ الحركات فيه هترجع قابلة للتعديل والحذف تاني.');">
+                    <button class="btn btn-sm btn-outline-warning">إعادة فتح</button>
+                  </form>
+                </td>
+              <% } %>
+            </tr>
+          <% }) %>
+          <% if (closings.length === 0) { %>
+            <tr><td colspan="8" class="text-center text-muted py-3">لسه مفيش شهور مقفولة</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

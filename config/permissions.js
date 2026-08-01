@@ -10,6 +10,7 @@ module.exports = {
     { key: 'accounts', label: 'شجرة الحسابات' },
     { key: 'treasury', label: 'الخزنة' },
     { key: 'reports', label: 'التقارير' },
+    { key: 'closing', label: 'التقفيل الشهري' },
     { key: 'users', label: 'المستخدمين' },
     { key: 'roles', label: 'الأدوار والصلاحيات' },
     { key: 'settings', label: 'إعدادات الشركة' }

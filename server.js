@@ -47,6 +47,8 @@ app.use('/receipts', require('./routes/receipts'));
 app.use('/users', require('./routes/users'));
 app.use('/roles', require('./routes/roles'));
 app.use('/settings', require('./routes/settings'));
+app.use('/reports', require('./routes/reports'));
+app.use('/closing', require('./routes/closing'));
 
 app.use((req, res) => {
   res.status(404).render('404', { title: 'الصفحة غير موجودة' });
@@ -55,6 +57,15 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   console.error(err);
   res.status(500).send('حصل خطأ في السيرفر: ' + err.message);
+});
+
+// شبكة أمان إضافية: لو حصل خطأ في أي مكان تاني مانسيناهوش (نادر جدًا)،
+// نسجله في اللوج بس من غير ما نوقف السيرفر عن الشغل لباقي المستخدمين
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled Rejection:', err);
+});
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
 });
 
 const PORT = process.env.PORT || 3000;

@@ -62,3 +62,19 @@ body {
   background-color: #14213d;
   border-color: #14213d;
 }
+
+@media print {
+  .no-print, .app-navbar, .navbar {
+    display: none !important;
+  }
+  body {
+    background: #fff !important;
+  }
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+}

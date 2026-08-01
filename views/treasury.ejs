@@ -2,9 +2,14 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4 class="fw-bold mb-0">الخزنة</h4>
-  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#adjustModal">
-    <i class="fa-solid fa-plus"></i> تسوية رصيد
-  </button>
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#reconcileModal">
+      <i class="fa-solid fa-scale-balanced"></i> تسوية الخزنة (جرد فعلي)
+    </button>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#adjustModal">
+      <i class="fa-solid fa-plus"></i> إضافة/خصم رصيد يدوي
+    </button>
+  </div>
 </div>
 
 <div class="row g-3 mb-4">
@@ -45,7 +50,7 @@
           </tr>
         </thead>
         <tbody>
-          <% const modLabels = { purchases: 'مشتريات', expenses: 'مصروفات', sales: 'مبيعات', receipts: 'استلام فلوس', adjustment: 'تسوية' }; %>
+          <% const modLabels = { purchases: 'مشتريات', expenses: 'مصروفات', sales: 'مبيعات', receipts: 'استلام فلوس', adjustment: 'تسوية يدوية', reconciliation: 'تسوية جرد' }; %>
           <% ledger.forEach(l => { %>
             <tr>
               <td><%= new Date(l.entry_date).toLocaleDateString('ar-EG') %></td>
@@ -67,6 +72,75 @@
           <% } %>
         </tbody>
       </table>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">سجل تسويات الجرد الفعلي</h6>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>التاريخ</th>
+            <th>رصيد النظام</th>
+            <th>الرصيد الفعلي بالعد</th>
+            <th>الفرق</th>
+            <th>ملاحظات</th>
+            <th>بواسطة</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% reconciliations.forEach(r => { %>
+            <tr>
+              <td><%= new Date(r.recon_date).toLocaleDateString('ar-EG') %></td>
+              <td><%= Number(r.system_balance).toLocaleString('ar-EG') %></td>
+              <td><%= Number(r.actual_balance).toLocaleString('ar-EG') %></td>
+              <td class="<%= Number(r.difference) === 0 ? '' : (Number(r.difference) > 0 ? 'text-success' : 'text-danger') %> fw-bold">
+                <%= Number(r.difference).toLocaleString('ar-EG') %>
+              </td>
+              <td><%= r.notes || '-' %></td>
+              <td><small class="text-muted"><%= r.created_by_name || '-' %></small></td>
+            </tr>
+          <% }) %>
+          <% if (reconciliations.length === 0) { %>
+            <tr><td colspan="6" class="text-center text-muted py-3">لسه مفيش تسويات جرد مسجلة</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="reconcileModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="/treasury/reconcile">
+        <div class="modal-header">
+          <h5 class="modal-title">تسوية الخزنة (جرد فعلي)</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted">رصيد النظام الحالي: <strong><%= Number(balance).toLocaleString('ar-EG') %> <%= company.currency %></strong></p>
+          <div class="mb-3">
+            <label class="form-label">تاريخ الجرد</label>
+            <input type="date" name="recon_date" class="form-control" required value="<%= new Date().toISOString().slice(0,10) %>">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">الرصيد الفعلي بالعد (الكاش الموجود فعليًا)</label>
+            <input type="number" step="0.01" min="0" name="actual_balance" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">ملاحظات (اختياري)</label>
+            <input type="text" name="notes" class="form-control" placeholder="مثال: جرد نهاية اليوم">
+          </div>
+          <p class="text-muted small mb-0">لو فيه فرق بين الرصيد الفعلي ورصيد النظام، هيتسجل تلقائيًا كحركة تصحيح في الخزنة عشان الرصيد يبقى مطابق للجرد الفعلي.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">حفظ التسوية</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>

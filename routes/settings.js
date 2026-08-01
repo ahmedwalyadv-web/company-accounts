@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const pool = require('../db/pool');
 const { requirePermission } = require('../middleware/auth');
+const asyncHandler = require('../middleware/asyncHandler');
 
 const router = express.Router();
 router.use(requirePermission('settings'));
@@ -11,13 +12,13 @@ const upload = multer({
   limits: { fileSize: 2 * 1024 * 1024 } // 2MB
 });
 
-router.get('/', async (req, res) => {
+router.get('/', asyncHandler(async (req, res) => {
   const company = await pool.query('SELECT * FROM company_settings WHERE id = 1');
   const reasons = await pool.query('SELECT * FROM expense_reasons ORDER BY name');
   res.render('settings', { title: 'إعدادات الشركة', companyRow: company.rows[0], reasons: reasons.rows, success: null });
-});
+}));
 
-router.post('/', upload.single('logo'), async (req, res) => {
+router.post('/', upload.single('logo'), asyncHandler(async (req, res) => {
   const { name, currency } = req.body;
   if (req.file) {
     const base64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
@@ -32,24 +33,24 @@ router.post('/', upload.single('logo'), async (req, res) => {
     );
   }
   res.redirect('/settings');
-});
+}));
 
-router.post('/reasons', async (req, res) => {
+router.post('/reasons', asyncHandler(async (req, res) => {
   const { name } = req.body;
   if (name && name.trim()) {
     await pool.query('INSERT INTO expense_reasons (name) VALUES ($1) ON CONFLICT (name) DO NOTHING', [name.trim()]);
   }
   res.redirect('/settings');
-});
+}));
 
-router.post('/reasons/:id/toggle', async (req, res) => {
+router.post('/reasons/:id/toggle', asyncHandler(async (req, res) => {
   await pool.query('UPDATE expense_reasons SET active = NOT active WHERE id = $1', [req.params.id]);
   res.redirect('/settings');
-});
+}));
 
-router.post('/reasons/:id/delete', async (req, res) => {
+router.post('/reasons/:id/delete', asyncHandler(async (req, res) => {
   await pool.query('DELETE FROM expense_reasons WHERE id = $1', [req.params.id]);
   res.redirect('/settings');
-});
+}));
 
 module.exports = router;

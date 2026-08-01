@@ -107,6 +107,32 @@ CREATE TABLE IF NOT EXISTS receipts (
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+-- التقفيل الشهري: كل صف بيمثل شهر اتقفل وتم حساب إجمالياته
+CREATE TABLE IF NOT EXISTS monthly_closings (
+  id SERIAL PRIMARY KEY,
+  period DATE NOT NULL UNIQUE, -- أول يوم في الشهر المقفول
+  total_purchases NUMERIC(14,2) NOT NULL DEFAULT 0,
+  total_expenses NUMERIC(14,2) NOT NULL DEFAULT 0,
+  total_sales NUMERIC(14,2) NOT NULL DEFAULT 0,
+  total_receipts NUMERIC(14,2) NOT NULL DEFAULT 0,
+  net_profit NUMERIC(14,2) NOT NULL DEFAULT 0,
+  notes TEXT,
+  closed_by INTEGER REFERENCES users(id),
+  closed_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- تسوية الخزنة: مقارنة رصيد النظام بالرصيد الفعلي بالعد
+CREATE TABLE IF NOT EXISTS treasury_reconciliations (
+  id SERIAL PRIMARY KEY,
+  recon_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  system_balance NUMERIC(14,2) NOT NULL,
+  actual_balance NUMERIC(14,2) NOT NULL,
+  difference NUMERIC(14,2) NOT NULL,
+  notes TEXT,
+  created_by INTEGER REFERENCES users(id),
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS "session" (
   sid VARCHAR NOT NULL COLLATE "default" PRIMARY KEY,
   sess JSON NOT NULL,

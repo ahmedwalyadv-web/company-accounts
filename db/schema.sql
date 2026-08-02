@@ -65,6 +65,17 @@ CREATE TABLE IF NOT EXISTS customers (
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+-- بيانات الموردين
+CREATE TABLE IF NOT EXISTS suppliers (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  phone TEXT,
+  email TEXT,
+  address TEXT,
+  notes TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
 -- شجرة الحسابات
 CREATE TABLE IF NOT EXISTS accounts (
   id SERIAL PRIMARY KEY,
@@ -105,6 +116,7 @@ CREATE TABLE IF NOT EXISTS purchases (
   description TEXT,
   payment_method TEXT NOT NULL DEFAULT 'cash', -- cash / visa / network
   paid_by_user_id INTEGER REFERENCES users(id), -- مين اللي دفع فعليًا للمورد
+  supplier_id INTEGER REFERENCES suppliers(id),
   created_by INTEGER REFERENCES users(id),
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -207,6 +219,7 @@ ALTER TABLE sales ADD COLUMN IF NOT EXISTS sale_type TEXT NOT NULL DEFAULT 'sale
 ALTER TABLE sales ADD COLUMN IF NOT EXISTS customer_id INTEGER REFERENCES customers(id);
 ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS anthropic_api_key TEXT;
 ALTER TABLE inventory_movements ADD COLUMN IF NOT EXISTS unit_cost NUMERIC(14,2);
+ALTER TABLE purchases ADD COLUMN IF NOT EXISTS supplier_id INTEGER REFERENCES suppliers(id);
 
 CREATE TABLE IF NOT EXISTS "session" (
   sid VARCHAR NOT NULL COLLATE "default" PRIMARY KEY,

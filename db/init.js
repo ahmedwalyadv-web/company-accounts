@@ -22,9 +22,9 @@ async function run() {
   // الأدوار الافتراضية
   const roles = [
     { name: 'مدير النظام', is_admin: true, permissions: ALL_KEYS },
-    { name: 'محاسب', is_admin: false, permissions: ['dashboard','purchases','expenses','sales','receipts','accounts','treasury','reports'] },
-    { name: 'مبيعات', is_admin: false, permissions: ['dashboard','sales','receipts','reports'] },
-    { name: 'مسؤول مصروفات', is_admin: false, permissions: ['dashboard','purchases','expenses','reports'] }
+    { name: 'محاسب', is_admin: false, permissions: ['dashboard','purchases','expenses','sales','receipts','inventory','customers','suppliers','accounts','treasury','reports'] },
+    { name: 'مبيعات', is_admin: false, permissions: ['dashboard','sales','receipts','customers','inventory','reports'] },
+    { name: 'مسؤول مصروفات', is_admin: false, permissions: ['dashboard','purchases','expenses','suppliers','inventory','reports'] }
   ];
 
   for (const r of roles) {

@@ -1,0 +1,130 @@
+<%- include('partials/header', { title: 'الموردين' }) %>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="fw-bold mb-0">الموردين</h4>
+  <div class="d-flex gap-2">
+    <a href="/suppliers/export/excel" class="btn btn-outline-success"><i class="fa-solid fa-file-excel"></i> تصدير إكسل</a>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newSupplierModal">
+      <i class="fa-solid fa-truck"></i> مورد جديد
+    </button>
+  </div>
+</div>
+
+<% if (error) { %><div class="alert alert-danger"><%= error %></div><% } %>
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>الاسم</th>
+            <th>التليفون</th>
+            <th>الإيميل</th>
+            <th>عدد فواتير الشراء</th>
+            <th>إجمالي المشتريات</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% suppliers.forEach(s => { %>
+            <tr>
+              <td><%= s.name %></td>
+              <td><%= s.phone || '-' %></td>
+              <td><%= s.email || '-' %></td>
+              <td><%= s.orders_count %></td>
+              <td class="fw-bold"><%= Number(s.total_purchases).toLocaleString('ar-EG') %> <%= company.currency %></td>
+              <td class="text-nowrap">
+                <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#edit-<%= s.id %>"><i class="fa-solid fa-pen"></i></button>
+                <form action="/suppliers/<%= s.id %>/delete" method="POST" class="d-inline" onsubmit="return confirm('متأكد من حذف المورد؟');">
+                  <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+
+            <div class="modal fade" id="edit-<%= s.id %>" tabindex="-1">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <form method="POST" action="/suppliers/<%= s.id %>">
+                    <div class="modal-header">
+                      <h6 class="modal-title">تعديل بيانات <%= s.name %></h6>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                      <div class="mb-3">
+                        <label class="form-label">الاسم</label>
+                        <input type="text" name="name" class="form-control" required value="<%= s.name %>">
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">التليفون</label>
+                        <input type="text" name="phone" class="form-control" value="<%= s.phone || '' %>">
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">الإيميل</label>
+                        <input type="email" name="email" class="form-control" value="<%= s.email || '' %>">
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">العنوان</label>
+                        <input type="text" name="address" class="form-control" value="<%= s.address || '' %>">
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">ملاحظات</label>
+                        <textarea name="notes" class="form-control" rows="2"><%= s.notes || '' %></textarea>
+                      </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="submit" class="btn btn-primary">حفظ</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+          <% if (suppliers.length === 0) { %>
+            <tr><td colspan="6" class="text-center text-muted py-4">لسه مفيش موردين مسجلين — أي مورد تكتب اسمه في فاتورة شراء جديدة هيضاف هنا تلقائيًا</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="newSupplierModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="/suppliers">
+        <div class="modal-header">
+          <h5 class="modal-title">مورد جديد</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">الاسم</label>
+            <input type="text" name="name" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">التليفون</label>
+            <input type="text" name="phone" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">الإيميل</label>
+            <input type="email" name="email" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">العنوان</label>
+            <input type="text" name="address" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">ملاحظات</label>
+            <textarea name="notes" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">حفظ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

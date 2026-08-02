@@ -4,6 +4,7 @@ const { requirePermission } = require('../middleware/auth');
 const { isPeriodClosed } = require('../db/periodLock');
 const asyncHandler = require('../middleware/asyncHandler');
 const { findOrCreateItem, applyStockMovement, reverseMovementsForSource } = require('../db/inventory');
+const { findOrCreateCustomer } = require('../db/parties');
 
 const router = express.Router();
 router.use(requirePermission('sales'));
@@ -99,7 +100,7 @@ router.get('/new', asyncHandler(async (req, res) => {
 }));
 
 router.post('/', asyncHandler(async (req, res) => {
-  const { entry_date, party, payment_method, account_id, received_by_user_id, description, sale_type, customer_id } = req.body;
+  const { entry_date, party, payment_method, account_id, received_by_user_id, description, sale_type, customer_id, customer_phone, customer_email } = req.body;
   const lines = parseLines(req.body);
   const method = VALID_METHODS.includes(payment_method) ? payment_method : 'cash';
   const type = VALID_SALE_TYPES.includes(sale_type) ? sale_type : 'sale';
@@ -122,10 +123,21 @@ router.post('/', asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    // لو مش اختار عميل من القائمة، نلاقي/ننشئ العميل تلقائيًا بالاسم المكتوب (مش شرط يكون مضاف مسبقًا)
+    let finalCustomerId = customer_id || null;
+    if (finalCustomerId && (customer_phone || customer_email)) {
+      await client.query(
+        `UPDATE customers SET phone = COALESCE(phone,$1), email = COALESCE(email,$2) WHERE id = $3`,
+        [customer_phone || null, customer_email || null, finalCustomerId]
+      );
+    } else if (!finalCustomerId) {
+      const customer = await findOrCreateCustomer(client, { name: party, phone: customer_phone, email: customer_email });
+      finalCustomerId = customer ? customer.id : null;
+    }
     const inserted = await client.query(
       `INSERT INTO sales (entry_date, party, amount, account_id, description, payment_method, received_by_user_id, sale_type, customer_id, created_by)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
-      [entry_date, party, amount, finalAccountId, description || null, method, finalReceivedBy, type, customer_id || null, userId]
+      [entry_date, party, amount, finalAccountId, description || null, method, finalReceivedBy, type, finalCustomerId, userId]
     );
     const saleId = inserted.rows[0].id;
 
@@ -194,7 +206,7 @@ router.get('/:id/edit', asyncHandler(async (req, res) => {
 }));
 
 router.post('/:id', asyncHandler(async (req, res) => {
-  const { entry_date, party, payment_method, account_id, received_by_user_id, description, sale_type, customer_id } = req.body;
+  const { entry_date, party, payment_method, account_id, received_by_user_id, description, sale_type, customer_id, customer_phone, customer_email } = req.body;
   const lines = parseLines(req.body);
   const method = VALID_METHODS.includes(payment_method) ? payment_method : 'cash';
   const type = VALID_SALE_TYPES.includes(sale_type) ? sale_type : 'sale';
@@ -223,9 +235,20 @@ router.post('/:id', asyncHandler(async (req, res) => {
     await reverseMovementsForSource(client, 'sales', saleId);
     await client.query(`DELETE FROM sale_lines WHERE sale_id = $1`, [saleId]);
 
+    let finalCustomerId = customer_id || null;
+    if (finalCustomerId && (customer_phone || customer_email)) {
+      await client.query(
+        `UPDATE customers SET phone = COALESCE(phone,$1), email = COALESCE(email,$2) WHERE id = $3`,
+        [customer_phone || null, customer_email || null, finalCustomerId]
+      );
+    } else if (!finalCustomerId) {
+      const customer = await findOrCreateCustomer(client, { name: party, phone: customer_phone, email: customer_email });
+      finalCustomerId = customer ? customer.id : null;
+    }
+
     await client.query(
       `UPDATE sales SET entry_date=$1, party=$2, amount=$3, account_id=$4, description=$5, payment_method=$6, received_by_user_id=$7, sale_type=$8, customer_id=$9 WHERE id=$10`,
-      [entry_date, party, amount, finalAccountId, description || null, method, finalReceivedBy, type, customer_id || null, saleId]
+      [entry_date, party, amount, finalAccountId, description || null, method, finalReceivedBy, type, finalCustomerId, saleId]
     );
 
     for (const line of lines) {

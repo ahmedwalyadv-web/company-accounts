@@ -59,11 +59,15 @@
             <th>استلام فلوس</th>
             <th>صافي الربح</th>
             <th>اتقفل بواسطة</th>
+            <th></th>
             <% if (currentUser.is_admin) { %><th></th><% } %>
           </tr>
         </thead>
         <tbody>
           <% closings.forEach(c => { %>
+            <% const periodDate = new Date(c.period); const py = periodDate.getFullYear(); const pm = periodDate.getMonth();
+               const monthFrom = new Date(py, pm, 1).toISOString().slice(0,10);
+               const monthTo = new Date(py, pm + 1, 0).toISOString().slice(0,10); %>
             <tr>
               <td><%= new Date(c.period).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long' }) %></td>
               <td><%= Number(c.total_purchases).toLocaleString('ar-EG') %></td>
@@ -72,6 +76,11 @@
               <td><%= Number(c.total_receipts).toLocaleString('ar-EG') %></td>
               <td class="fw-bold"><%= Number(c.net_profit).toLocaleString('ar-EG') %></td>
               <td><small class="text-muted"><%= c.closed_by_name || '-' %></small></td>
+              <td>
+                <a href="/reports?from=<%= monthFrom %>&to=<%= monthTo %>" class="btn btn-sm btn-outline-primary" target="_blank">
+                  <i class="fa-solid fa-print"></i> عرض/طباعة الشهر
+                </a>
+              </td>
               <% if (currentUser.is_admin) { %>
                 <td>
                   <form action="/closing/<%= c.id %>/reopen" method="POST" onsubmit="return confirm('متأكد من إعادة فتح الشهر ده؟ الحركات فيه هترجع قابلة للتعديل والحذف تاني.');">
@@ -82,7 +91,7 @@
             </tr>
           <% }) %>
           <% if (closings.length === 0) { %>
-            <tr><td colspan="8" class="text-center text-muted py-3">لسه مفيش شهور مقفولة</td></tr>
+            <tr><td colspan="9" class="text-center text-muted py-3">لسه مفيش شهور مقفولة</td></tr>
           <% } %>
         </tbody>
       </table>

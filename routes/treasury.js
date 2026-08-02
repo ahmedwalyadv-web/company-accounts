@@ -7,10 +7,15 @@ const router = express.Router();
 router.use(requirePermission('treasury'));
 
 router.get('/', asyncHandler(async (req, res) => {
+  // بيانات الشهور المقفولة بتفضل مسجلة في النظام (مطلوبة لحساب الرصيد)، لكن بتختفي من هنا
+  // وتتراجع فقط من صفحة التقارير باختيار نفس الفترة (بما فيها الطباعة/التصدير)
   const ledger = await pool.query(`
     SELECT tl.*, u.full_name AS created_by_name
     FROM treasury_ledger tl
     LEFT JOIN users u ON tl.created_by = u.id
+    WHERE NOT EXISTS (
+      SELECT 1 FROM monthly_closings mc WHERE mc.period = date_trunc('month', tl.entry_date)::date
+    )
     ORDER BY tl.entry_date DESC, tl.id DESC LIMIT 300
   `);
   const balanceResult = await pool.query(

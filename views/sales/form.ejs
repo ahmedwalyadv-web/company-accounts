@@ -36,6 +36,15 @@
             <div class="col-md-3">
               <label class="form-label">اسم العميل</label>
               <input type="text" name="party" id="partyInput" class="form-control" required value="<%= invoice ? invoice.party : '' %>">
+              <small class="text-muted">لو اسم جديد هيتضاف تلقائيًا لصفحة "العملاء" بعد الحفظ</small>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">تليفون العميل (اختياري)</label>
+              <input type="text" name="customer_phone" class="form-control" placeholder="لو عميل جديد">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">إيميل العميل (اختياري)</label>
+              <input type="email" name="customer_email" class="form-control" placeholder="لو عميل جديد">
             </div>
 
             <div class="col-md-4">

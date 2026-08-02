@@ -17,7 +17,11 @@
             </div>
             <div class="col-md-4">
               <label class="form-label">المورد</label>
-              <input type="text" name="party" class="form-control" required value="<%= invoice ? invoice.party : '' %>">
+              <input type="text" name="party" id="supplierName" list="suppliersList" class="form-control" required value="<%= invoice ? invoice.party : '' %>">
+              <datalist id="suppliersList">
+                <% suppliers.forEach(s => { %><option value="<%= s.name %>"><% }) %>
+              </datalist>
+              <small class="text-muted">لو الاسم جديد هيتضاف تلقائيًا لصفحة "الموردين" بعد الحفظ</small>
             </div>
             <div class="col-md-4">
               <label class="form-label">طريقة الدفع للمورد</label>
@@ -35,6 +39,14 @@
                   <option value="<%= u.id %>" <%= invoice && invoice.paid_by_user_id === u.id ? 'selected' : (!invoice && u.id === currentUser.id ? 'selected' : '') %>><%= u.full_name %></option>
                 <% }) %>
               </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">تليفون المورد (اختياري)</label>
+              <input type="text" name="supplier_phone" class="form-control" placeholder="لو مورد جديد">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">إيميل المورد (اختياري)</label>
+              <input type="email" name="supplier_email" class="form-control" placeholder="لو مورد جديد">
             </div>
             <div class="col-md-8">
               <label class="form-label">وصف / ملاحظات على الفاتورة</label>

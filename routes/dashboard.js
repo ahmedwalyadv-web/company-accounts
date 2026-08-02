@@ -22,7 +22,11 @@ router.get('/', requireLogin, asyncHandler(async (req, res) => {
         SELECT 'sales', entry_date, party, amount, created_at FROM sales
         UNION ALL
         SELECT 'receipts', entry_date, party, amount, created_at FROM receipts
-      ) t ORDER BY created_at DESC LIMIT 10
+      ) t
+      WHERE NOT EXISTS (
+        SELECT 1 FROM monthly_closings mc WHERE mc.period = date_trunc('month', t.entry_date)::date
+      )
+      ORDER BY created_at DESC LIMIT 10
     `)
   ]);
 

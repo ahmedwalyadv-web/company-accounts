@@ -46,6 +46,7 @@ app.use('/sales', require('./routes/sales'));
 app.use('/receipts', require('./routes/receipts'));
 app.use('/inventory', require('./routes/inventory'));
 app.use('/customers', require('./routes/customers'));
+app.use('/suppliers', require('./routes/suppliers'));
 app.use('/users', require('./routes/users'));
 app.use('/roles', require('./routes/roles'));
 app.use('/settings', require('./routes/settings'));

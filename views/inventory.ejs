@@ -36,6 +36,7 @@
             <th>الكمية المتاحة</th>
             <th>متوسط تكلفة الوحدة</th>
             <th>القيمة الإجمالية</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -45,10 +46,40 @@
               <td class="<%= Number(i.quantity_on_hand) <= 0 ? 'text-danger fw-bold' : '' %>"><%= Number(i.quantity_on_hand).toLocaleString('ar-EG') %></td>
               <td><%= Number(i.unit_cost).toLocaleString('ar-EG') %></td>
               <td class="fw-bold"><%= (Number(i.quantity_on_hand) * Number(i.unit_cost)).toLocaleString('ar-EG') %> <%= company.currency %></td>
+              <td>
+                <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#edit-item-<%= i.id %>"><i class="fa-solid fa-pen"></i></button>
+              </td>
             </tr>
+
+            <div class="modal fade" id="edit-item-<%= i.id %>" tabindex="-1">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <form method="POST" action="/inventory/<%= i.id %>/edit">
+                    <div class="modal-header">
+                      <h6 class="modal-title">تعديل صنف: <%= i.name %></h6>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                      <div class="mb-3">
+                        <label class="form-label">اسم الصنف</label>
+                        <input type="text" name="name" class="form-control" required value="<%= i.name %>">
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">متوسط تكلفة الوحدة</label>
+                        <input type="number" step="0.01" min="0" name="unit_cost" class="form-control" value="<%= i.unit_cost %>">
+                        <small class="text-muted">تعديل التكلفة هنا يدوي ومش مرتبط بحركة شراء — استخدمه للتصحيح فقط</small>
+                      </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="submit" class="btn btn-primary">حفظ</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
           <% }) %>
           <% if (items.length === 0) { %>
-            <tr><td colspan="4" class="text-center text-muted py-3">لسه مفيش أصناف في المخزن</td></tr>
+            <tr><td colspan="5" class="text-center text-muted py-3">لسه مفيش أصناف في المخزن</td></tr>
           <% } %>
         </tbody>
       </table>

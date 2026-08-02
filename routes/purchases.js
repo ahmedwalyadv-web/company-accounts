@@ -4,6 +4,7 @@ const { requirePermission } = require('../middleware/auth');
 const { isPeriodClosed } = require('../db/periodLock');
 const asyncHandler = require('../middleware/asyncHandler');
 const { findOrCreateItem, applyStockMovement, reverseMovementsForSource } = require('../db/inventory');
+const { findOrCreateSupplier } = require('../db/parties');
 
 const router = express.Router();
 router.use(requirePermission('purchases'));
@@ -74,10 +75,12 @@ router.get('/', asyncHandler(async (req, res) => {
 router.get('/new', asyncHandler(async (req, res) => {
   const users = (await pool.query(`SELECT id, full_name FROM users WHERE active = true ORDER BY full_name`)).rows;
   const items = (await pool.query(`SELECT id, name FROM items ORDER BY name`)).rows;
+  const suppliers = (await pool.query(`SELECT id, name, phone, email FROM suppliers ORDER BY name`)).rows;
   res.render('purchases/form', {
     title: 'إضافة فاتورة شراء',
     users,
     items,
+    suppliers,
     paymentMethods: PAYMENT_METHODS,
     invoice: null,
     lines: [],
@@ -87,7 +90,7 @@ router.get('/new', asyncHandler(async (req, res) => {
 }));
 
 router.post('/', asyncHandler(async (req, res) => {
-  const { entry_date, party, payment_method, paid_by_user_id, description } = req.body;
+  const { entry_date, party, payment_method, paid_by_user_id, description, supplier_phone, supplier_email } = req.body;
   const lines = parseLines(req.body);
   const method = VALID_METHODS.includes(payment_method) ? payment_method : 'cash';
 
@@ -104,10 +107,12 @@ router.post('/', asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    // بنلاقي المورد بالاسم أو ننشئه تلقائيًا لو جديد (مش شرط يكون مضاف مسبقًا من صفحة الموردين)
+    const supplier = await findOrCreateSupplier(client, { name: party, phone: supplier_phone, email: supplier_email });
     const inserted = await client.query(
-      `INSERT INTO purchases (entry_date, party, amount, description, payment_method, paid_by_user_id, created_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
-      [entry_date, party, amount, description || null, method, paid_by_user_id || null, userId]
+      `INSERT INTO purchases (entry_date, party, amount, description, payment_method, paid_by_user_id, supplier_id, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
+      [entry_date, party, amount, description || null, method, paid_by_user_id || null, supplier ? supplier.id : null, userId]
     );
     const purchaseId = inserted.rows[0].id;
 
@@ -159,10 +164,12 @@ router.get('/:id/edit', asyncHandler(async (req, res) => {
   const linesResult = await pool.query(`SELECT * FROM purchase_lines WHERE purchase_id = $1 ORDER BY id`, [req.params.id]);
   const users = (await pool.query(`SELECT id, full_name FROM users WHERE active = true ORDER BY full_name`)).rows;
   const items = (await pool.query(`SELECT id, name FROM items ORDER BY name`)).rows;
+  const suppliers = (await pool.query(`SELECT id, name, phone, email FROM suppliers ORDER BY name`)).rows;
   res.render('purchases/form', {
     title: 'تعديل فاتورة شراء',
     users,
     items,
+    suppliers,
     paymentMethods: PAYMENT_METHODS,
     invoice: result.rows[0],
     lines: linesResult.rows,
@@ -172,7 +179,7 @@ router.get('/:id/edit', asyncHandler(async (req, res) => {
 }));
 
 router.post('/:id', asyncHandler(async (req, res) => {
-  const { entry_date, party, payment_method, paid_by_user_id, description } = req.body;
+  const { entry_date, party, payment_method, paid_by_user_id, description, supplier_phone, supplier_email } = req.body;
   const lines = parseLines(req.body);
   const method = VALID_METHODS.includes(payment_method) ? payment_method : 'cash';
 
@@ -196,9 +203,10 @@ router.post('/:id', asyncHandler(async (req, res) => {
     await reverseMovementsForSource(client, 'purchases', purchaseId);
     await client.query(`DELETE FROM purchase_lines WHERE purchase_id = $1`, [purchaseId]);
 
+    const supplier = await findOrCreateSupplier(client, { name: party, phone: supplier_phone, email: supplier_email });
     await client.query(
-      `UPDATE purchases SET entry_date=$1, party=$2, amount=$3, description=$4, payment_method=$5, paid_by_user_id=$6 WHERE id=$7`,
-      [entry_date, party, amount, description || null, method, paid_by_user_id || null, purchaseId]
+      `UPDATE purchases SET entry_date=$1, party=$2, amount=$3, description=$4, payment_method=$5, paid_by_user_id=$6, supplier_id=$7 WHERE id=$8`,
+      [entry_date, party, amount, description || null, method, paid_by_user_id || null, supplier ? supplier.id : null, purchaseId]
     );
 
     for (const line of lines) {

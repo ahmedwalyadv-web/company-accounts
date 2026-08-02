@@ -9,6 +9,7 @@ module.exports = {
     { key: 'receipts', label: 'استلام الفلوس' },
     { key: 'inventory', label: 'المخزون' },
     { key: 'customers', label: 'العملاء' },
+    { key: 'suppliers', label: 'الموردين' },
     { key: 'accounts', label: 'شجرة الحسابات' },
     { key: 'treasury', label: 'الخزنة' },
     { key: 'reports', label: 'التقارير' },

@@ -3,6 +3,7 @@ const multer = require('multer');
 const pool = require('../db/pool');
 const { requirePermission } = require('../middleware/auth');
 const asyncHandler = require('../middleware/asyncHandler');
+const { clearModules, clearAll, MODULE_LABELS } = require('../db/dataReset');
 
 const router = express.Router();
 router.use(requirePermission('settings'));
@@ -12,10 +13,25 @@ const upload = multer({
   limits: { fileSize: 2 * 1024 * 1024 } // 2MB
 });
 
+// منطقة الخطر (مسح البيانات) للأدمن فقط، حتى لو دور تاني عنده صلاحية "settings"
+function requireAdmin(req, res, next) {
+  if (!req.session.user.is_admin) {
+    return res.status(403).render('403', { title: 'غير مصرح' });
+  }
+  next();
+}
+
 router.get('/', asyncHandler(async (req, res) => {
   const company = await pool.query('SELECT * FROM company_settings WHERE id = 1');
   const reasons = await pool.query('SELECT * FROM expense_reasons ORDER BY name');
-  res.render('settings', { title: 'إعدادات الشركة', companyRow: company.rows[0], reasons: reasons.rows, success: null });
+  res.render('settings', {
+    title: 'إعدادات الشركة',
+    companyRow: company.rows[0],
+    reasons: reasons.rows,
+    success: null,
+    moduleLabels: MODULE_LABELS,
+    resetError: req.query.resetError === '1' ? 'كتابة التأكيد غير صحيحة، برجاء كتابة "مسح البيانات" بالحروف بالضبط.' : null
+  });
 }));
 
 router.post('/', upload.single('logo'), asyncHandler(async (req, res) => {
@@ -66,6 +82,50 @@ router.post('/reasons/:id/toggle', asyncHandler(async (req, res) => {
 
 router.post('/reasons/:id/delete', asyncHandler(async (req, res) => {
   await pool.query('DELETE FROM expense_reasons WHERE id = $1', [req.params.id]);
+  res.redirect('/settings');
+}));
+
+const CONFIRM_PHRASE = 'مسح البيانات';
+
+// تصفير كامل لكل الحركات (المشتريات/المصروفات/المبيعات/استلام الفلوس/المخزون/العملاء/الموردين/التقفيل الشهري)
+// بيسيب اليوزرز والأدوار وشجرة الحسابات وإعدادات الشركة كما هي. للأدمن فقط، ومحتاج كتابة تأكيد.
+router.post('/reset-data/full', requireAdmin, asyncHandler(async (req, res) => {
+  const { confirm_text } = req.body;
+  if (confirm_text !== CONFIRM_PHRASE) {
+    return res.redirect('/settings?resetError=1');
+  }
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await clearAll(client);
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+  res.redirect('/settings');
+}));
+
+// مسح جزئي لموديولات محددة بس، مع الحفاظ على تناسق البيانات (عكس حركات المخزون المرتبطة بدل كسرها)
+router.post('/reset-data/partial', requireAdmin, asyncHandler(async (req, res) => {
+  const { confirm_text } = req.body;
+  const modules = [].concat(req.body.modules || []).filter(m => Object.keys(MODULE_LABELS).includes(m));
+  if (confirm_text !== CONFIRM_PHRASE || !modules.length) {
+    return res.redirect('/settings?resetError=1');
+  }
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await clearModules(client, modules);
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
   res.redirect('/settings');
 }));
 

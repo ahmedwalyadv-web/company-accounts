@@ -68,4 +68,62 @@
   </div>
 </div>
 
+<% if (currentUser.is_admin) { %>
+<div class="card mt-4 border-danger">
+  <div class="card-body p-4">
+    <h6 class="fw-bold text-danger mb-3"><i class="fa-solid fa-triangle-exclamation"></i> منطقة خطر — إدارة/مسح البيانات</h6>
+    <p class="text-muted small">
+      الأدوات دي بتمسح حركات فعلية من قاعدة البيانات بشكل نهائي ومش رجعة فيه. اليوزرز والأدوار وشجرة الحسابات وإعدادات الشركة وأسباب الصرف مش بيتأثروا.
+    </p>
+
+    <% if (resetError) { %><div class="alert alert-danger"><%= resetError %></div><% } %>
+
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="border rounded p-3 h-100">
+          <h6 class="fw-bold mb-2">تصفير كامل لكل الحركات</h6>
+          <p class="small text-muted">
+            بيمسح: كل المشتريات والمبيعات وبنودها، المصروفات، استلام الفلوس، حركة الخزنة، المخزون والأصناف،
+            العملاء، الموردين، وسجلات التقفيل الشهري وتسوية الخزنة. ويرجّع الترقيم التلقائي للصفر.
+          </p>
+          <form method="POST" action="/settings/reset-data/full"
+                onsubmit="return confirm('متأكد تمامًا؟ الخطوة دي مش رجعة فيها وهتمسح كل الحركات نهائيًا.');">
+            <div class="mb-2">
+              <label class="form-label small">اكتب "مسح البيانات" بالحروف للتأكيد</label>
+              <input type="text" name="confirm_text" class="form-control" placeholder="مسح البيانات" required>
+            </div>
+            <button type="submit" class="btn btn-danger w-100"><i class="fa-solid fa-trash"></i> تصفير كل البيانات</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="border rounded p-3 h-100">
+          <h6 class="fw-bold mb-2">مسح جزئي (اختار الموديولات)</h6>
+          <p class="small text-muted">لو مسحت مشتريات أو مبيعات، حركة المخزون المرتبطة بيها بترجع صحيحة تلقائيًا.</p>
+          <form method="POST" action="/settings/reset-data/partial"
+                onsubmit="return confirm('متأكد من مسح الموديولات المحددة؟ الخطوة دي مش رجعة فيها.');">
+            <div class="row row-cols-2 g-2 mb-3">
+              <% Object.entries(moduleLabels).forEach(([key, label]) => { %>
+                <div class="col">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="modules" value="<%= key %>" id="mod-<%= key %>">
+                    <label class="form-check-label small" for="mod-<%= key %>"><%= label %></label>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small">اكتب "مسح البيانات" بالحروف للتأكيد</label>
+              <input type="text" name="confirm_text" class="form-control" placeholder="مسح البيانات" required>
+            </div>
+            <button type="submit" class="btn btn-outline-danger w-100"><i class="fa-solid fa-eraser"></i> مسح المحدد فقط</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
+
 <%- include('partials/footer') %>

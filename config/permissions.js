@@ -7,10 +7,13 @@ module.exports = {
     { key: 'expenses', label: 'المصروفات' },
     { key: 'sales', label: 'المبيعات' },
     { key: 'receipts', label: 'استلام الفلوس' },
+    { key: 'inventory', label: 'المخزون' },
+    { key: 'customers', label: 'العملاء' },
     { key: 'accounts', label: 'شجرة الحسابات' },
     { key: 'treasury', label: 'الخزنة' },
     { key: 'reports', label: 'التقارير' },
     { key: 'closing', label: 'التقفيل الشهري' },
+    { key: 'assistant', label: 'المساعد الافتراضي' },
     { key: 'users', label: 'المستخدمين' },
     { key: 'roles', label: 'الأدوار والصلاحيات' },
     { key: 'settings', label: 'إعدادات الشركة' }

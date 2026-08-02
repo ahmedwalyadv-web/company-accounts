@@ -1,0 +1,204 @@
+<%- include('partials/header', { title: 'المساعد الافتراضي' }) %>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="fw-bold mb-0"><i class="fa-solid fa-robot"></i> المساعد الافتراضي</h4>
+  <button class="btn btn-sm btn-outline-secondary" id="resetBtn"><i class="fa-solid fa-rotate-right"></i> محادثة جديدة</button>
+</div>
+
+<% if (!hasApiKey) { %>
+  <div class="alert alert-warning">
+    لسه مفيش مفتاح Anthropic API محفوظ، فالمساعد مش شغال. روح <a href="/settings">صفحة إعدادات الشركة</a> وضيف المفتاح الأول.
+  </div>
+<% } %>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <small class="text-muted">
+      تقدر تكتب أو تتكلم بالصوت. تقدر تسأل عن رصيد الخزنة أو المخزون أو تقارير مالية، أو تطلب تسجيل مصروف/استلام فلوس/فاتورة شراء أو بيع —
+      وفي حالة أي عملية بتغيّر بيانات، هيبان لك ملخص وتأكيد قبل التنفيذ فعليًا.
+    </small>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div id="chatLog" style="height:50vh; overflow-y:auto;" class="mb-3 d-flex flex-column gap-2"></div>
+
+    <div id="confirmCard" class="alert alert-info d-none">
+      <div class="fw-bold mb-2"><i class="fa-solid fa-triangle-exclamation"></i> محتاج تأكيدك قبل التنفيذ:</div>
+      <div id="confirmText" class="mb-3"></div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-success btn-sm" id="confirmBtn"><i class="fa-solid fa-check"></i> تأكيد وتنفيذ</button>
+        <button class="btn btn-outline-danger btn-sm" id="cancelBtn"><i class="fa-solid fa-xmark"></i> إلغاء</button>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2 align-items-end">
+      <button class="btn btn-outline-secondary" id="micBtn" title="تسجيل صوتي" type="button"><i class="fa-solid fa-microphone"></i></button>
+      <textarea id="msgInput" class="form-control" rows="1" placeholder="اكتب رسالتك هنا..." <%= hasApiKey ? '' : 'disabled' %>></textarea>
+      <button class="btn btn-primary" id="sendBtn" <%= hasApiKey ? '' : 'disabled' %>><i class="fa-solid fa-paper-plane"></i></button>
+    </div>
+    <div class="form-check mt-2">
+      <input class="form-check-input" type="checkbox" id="speakToggle">
+      <label class="form-check-label small text-muted" for="speakToggle">قراءة ردود المساعد صوتيًا</label>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var chatLog = document.getElementById('chatLog');
+  var msgInput = document.getElementById('msgInput');
+  var sendBtn = document.getElementById('sendBtn');
+  var micBtn = document.getElementById('micBtn');
+  var speakToggle = document.getElementById('speakToggle');
+  var confirmCard = document.getElementById('confirmCard');
+  var confirmText = document.getElementById('confirmText');
+  var confirmBtn = document.getElementById('confirmBtn');
+  var cancelBtn = document.getElementById('cancelBtn');
+  var resetBtn = document.getElementById('resetBtn');
+  var busy = false;
+
+  function addBubble(text, who) {
+    var wrap = document.createElement('div');
+    wrap.className = 'd-flex ' + (who === 'user' ? 'justify-content-start' : 'justify-content-end');
+    var bubble = document.createElement('div');
+    bubble.className = (who === 'user' ? 'bg-primary text-white' : 'bg-light') + ' rounded-3 p-2 px-3';
+    bubble.style.maxWidth = '75%';
+    bubble.style.whiteSpace = 'pre-wrap';
+    bubble.textContent = text;
+    wrap.appendChild(bubble);
+    chatLog.appendChild(wrap);
+    chatLog.scrollTop = chatLog.scrollHeight;
+    return bubble;
+  }
+
+  function speak(text) {
+    if (!speakToggle.checked || !('speechSynthesis' in window)) return;
+    try {
+      var utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'ar-EG';
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utter);
+    } catch (e) {}
+  }
+
+  function setBusy(v) {
+    busy = v;
+    sendBtn.disabled = v || <%= hasApiKey ? 'false' : 'true' %>;
+    msgInput.disabled = v || <%= hasApiKey ? 'false' : 'true' %>;
+  }
+
+  function showConfirm(text) {
+    confirmText.textContent = text;
+    confirmCard.classList.remove('d-none');
+  }
+  function hideConfirm() {
+    confirmCard.classList.add('d-none');
+  }
+
+  async function postJSON(url, body) {
+    var res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body || {})
+    });
+    var data = null;
+    try { data = await res.json(); } catch (e) {}
+    return { ok: res.ok, data: data || {} };
+  }
+
+  async function sendMessage() {
+    var text = msgInput.value.trim();
+    if (!text || busy) return;
+    addBubble(text, 'user');
+    msgInput.value = '';
+    setBusy(true);
+    var r = await postJSON('/assistant/message', { message: text });
+    setBusy(false);
+    if (!r.ok) {
+      addBubble(r.data.error || 'حصل خطأ', 'assistant');
+      return;
+    }
+    if (r.data.needsConfirmation) {
+      if (r.data.assistantText) addBubble(r.data.assistantText, 'assistant');
+      showConfirm(r.data.confirmText);
+      setBusy(true); // نمنع رسائل جديدة لحد ما يتأكد أو يلغي
+    } else {
+      addBubble(r.data.reply, 'assistant');
+      speak(r.data.reply);
+    }
+  }
+
+  confirmBtn.addEventListener('click', async function () {
+    hideConfirm();
+    setBusy(true);
+    var r = await postJSON('/assistant/confirm', {});
+    setBusy(false);
+    if (!r.ok) { addBubble(r.data.error || 'حصل خطأ في التنفيذ', 'assistant'); return; }
+    if (r.data.needsConfirmation) {
+      if (r.data.assistantText) addBubble(r.data.assistantText, 'assistant');
+      showConfirm(r.data.confirmText);
+      setBusy(true);
+    } else {
+      addBubble(r.data.reply, 'assistant');
+      speak(r.data.reply);
+    }
+  });
+
+  cancelBtn.addEventListener('click', async function () {
+    hideConfirm();
+    setBusy(true);
+    var r = await postJSON('/assistant/cancel', {});
+    setBusy(false);
+    addBubble((r.data && r.data.reply) || 'تم الإلغاء', 'assistant');
+  });
+
+  resetBtn.addEventListener('click', async function () {
+    await postJSON('/assistant/reset', {});
+    chatLog.innerHTML = '';
+    hideConfirm();
+    setBusy(false);
+  });
+
+  sendBtn.addEventListener('click', sendMessage);
+  msgInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+
+  // تسجيل صوتي عن طريق Web Speech API (متاح في Chrome/Edge بشكل أساسي)
+  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SpeechRecognition) {
+    var recognition = new SpeechRecognition();
+    recognition.lang = 'ar-EG';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    var listening = false;
+
+    recognition.addEventListener('result', function (e) {
+      var transcript = e.results[0][0].transcript;
+      msgInput.value = transcript;
+      sendMessage();
+    });
+    recognition.addEventListener('end', function () {
+      listening = false;
+      micBtn.classList.remove('btn-danger');
+      micBtn.classList.add('btn-outline-secondary');
+    });
+
+    micBtn.addEventListener('click', function () {
+      if (busy) return;
+      if (listening) { recognition.stop(); return; }
+      listening = true;
+      micBtn.classList.remove('btn-outline-secondary');
+      micBtn.classList.add('btn-danger');
+      try { recognition.start(); } catch (e) {}
+    });
+  } else {
+    micBtn.disabled = true;
+    micBtn.title = 'التسجيل الصوتي غير متاح في هذا المتصفح';
+  }
+})();
+</script>
+
+<%- include('partials/footer') %>

@@ -23,6 +23,15 @@
             <label class="form-label">العملة</label>
             <input type="text" name="currency" class="form-control" required value="<%= companyRow.currency %>">
           </div>
+          <hr>
+          <div class="mb-2">
+            <label class="form-label">مفتاح Anthropic API (لتفعيل المساعد الافتراضي)</label>
+            <input type="password" name="anthropic_api_key" class="form-control" placeholder="<%= companyRow.anthropic_api_key ? '•••••••••••••••• (محفوظ بالفعل — سيبه فاضي عشان يفضل كما هو)' : 'sk-ant-...' %>">
+            <small class="text-muted">
+              سيب الحقل فاضي لو مش عايز تغيّر المفتاح المحفوظ. اكتب "-" وحفظ لو عايز تمسحه.
+              المفتاح ده بيتاخد من <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>.
+            </small>
+          </div>
           <button type="submit" class="btn btn-primary">حفظ</button>
         </form>
       </div>

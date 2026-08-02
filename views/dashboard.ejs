@@ -34,6 +34,13 @@
       <h3><%= Number(stats.receipts).toLocaleString('ar-EG') %></h3>
     </div>
   </div>
+  <div class="col-md-4">
+    <div class="stat-card bg-treasury">
+      <span>قيمة المخزون الحالية (رأس المال)</span>
+      <h3><%= Number(stats.inventoryValue).toLocaleString('ar-EG') %></h3>
+      <small><%= company.currency %></small>
+    </div>
+  </div>
 </div>
 
 <div class="card">

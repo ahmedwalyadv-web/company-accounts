@@ -44,11 +44,14 @@ app.use('/purchases', require('./routes/purchases'));
 app.use('/expenses', require('./routes/expenses'));
 app.use('/sales', require('./routes/sales'));
 app.use('/receipts', require('./routes/receipts'));
+app.use('/inventory', require('./routes/inventory'));
+app.use('/customers', require('./routes/customers'));
 app.use('/users', require('./routes/users'));
 app.use('/roles', require('./routes/roles'));
 app.use('/settings', require('./routes/settings'));
 app.use('/reports', require('./routes/reports'));
 app.use('/closing', require('./routes/closing'));
+app.use('/assistant', require('./routes/assistant'));
 
 app.use((req, res) => {
   res.status(404).render('404', { title: 'الصفحة غير موجودة' });

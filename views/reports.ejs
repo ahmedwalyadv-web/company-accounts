@@ -50,6 +50,13 @@
       <small><%= company.currency %></small>
     </div>
   </div>
+  <div class="col-md-4">
+    <div class="stat-card bg-treasury">
+      <span>قيمة المخزون الحالية (رأس المال — لقطة الآن)</span>
+      <h3><%= Number(totalInventoryValue).toLocaleString('ar-EG') %></h3>
+      <small><%= company.currency %></small>
+    </div>
+  </div>
 </div>
 
 <div class="row g-3 mb-4">
@@ -138,5 +145,72 @@
 <% detailTable('تفاصيل المصروفات', expensesList, true, false) %>
 <% detailTable('تفاصيل المبيعات', salesList, false, true) %>
 <% detailTable('تفاصيل استلام الفلوس', receiptsList, false, false) %>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">الأصناف/الأجهزة اللي دخلت المخزون من المشتريات في الفترة</h6>
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead><tr><th>الصنف</th><th>الكمية</th><th>الإجمالي</th></tr></thead>
+        <tbody>
+          <% assetsAddedInRange.forEach(r => { %>
+            <tr><td><%= r.item_name %></td><td><%= Number(r.total_qty).toLocaleString('ar-EG') %></td><td><%= Number(r.total_amount).toLocaleString('ar-EG') %> <%= company.currency %></td></tr>
+          <% }) %>
+          <% if (assetsAddedInRange.length === 0) { %>
+            <tr><td colspan="3" class="text-center text-muted">لا يوجد أصناف/أجهزة دخلت المخزون في الفترة دي</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">الأصناف اللي تم بيعها/تأجيرها في الفترة</h6>
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead><tr><th>الصنف</th><th>النوع</th><th>الكمية</th><th>الإجمالي</th></tr></thead>
+        <tbody>
+          <% itemsSoldInRange.forEach(r => { %>
+            <tr>
+              <td><%= r.item_name %></td>
+              <td><%= r.sale_type === 'rental' ? 'إيجار' : 'بيع' %></td>
+              <td><%= Number(r.total_qty).toLocaleString('ar-EG') %></td>
+              <td><%= Number(r.total_amount).toLocaleString('ar-EG') %> <%= company.currency %></td>
+            </tr>
+          <% }) %>
+          <% if (itemsSoldInRange.length === 0) { %>
+            <tr><td colspan="4" class="text-center text-muted">لا يوجد بيع/إيجار أصناف في الفترة دي</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">تقييم المخزون الحالي (لقطة الآن، بغض النظر عن الفترة المختارة)</h6>
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead><tr><th>الصنف</th><th>الكمية المتاحة</th><th>متوسط تكلفة الوحدة</th><th>القيمة</th></tr></thead>
+        <tbody>
+          <% inventorySnapshot.forEach(r => { %>
+            <tr>
+              <td><%= r.name %></td>
+              <td><%= Number(r.quantity_on_hand).toLocaleString('ar-EG') %></td>
+              <td><%= Number(r.unit_cost).toLocaleString('ar-EG') %></td>
+              <td class="fw-bold"><%= Number(r.value).toLocaleString('ar-EG') %> <%= company.currency %></td>
+            </tr>
+          <% }) %>
+          <% if (inventorySnapshot.length === 0) { %>
+            <tr><td colspan="4" class="text-center text-muted">لا يوجد أصناف في المخزون</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
 <%- include('partials/footer') %>

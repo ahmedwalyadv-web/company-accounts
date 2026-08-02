@@ -1,0 +1,130 @@
+<%- include('partials/header', { title: 'العملاء' }) %>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="fw-bold mb-0">العملاء</h4>
+  <div class="d-flex gap-2">
+    <a href="/customers/export/excel" class="btn btn-outline-success"><i class="fa-solid fa-file-excel"></i> تصدير إكسل</a>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newCustomerModal">
+      <i class="fa-solid fa-user-plus"></i> عميل جديد
+    </button>
+  </div>
+</div>
+
+<% if (error) { %><div class="alert alert-danger"><%= error %></div><% } %>
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>الاسم</th>
+            <th>التليفون</th>
+            <th>الإيميل</th>
+            <th>عدد الفواتير</th>
+            <th>إجمالي المبيعات</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% customers.forEach(c => { %>
+            <tr>
+              <td><%= c.name %></td>
+              <td><%= c.phone || '-' %></td>
+              <td><%= c.email || '-' %></td>
+              <td><%= c.orders_count %></td>
+              <td class="fw-bold"><%= Number(c.total_sales).toLocaleString('ar-EG') %> <%= company.currency %></td>
+              <td class="text-nowrap">
+                <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#edit-<%= c.id %>"><i class="fa-solid fa-pen"></i></button>
+                <form action="/customers/<%= c.id %>/delete" method="POST" class="d-inline" onsubmit="return confirm('متأكد من حذف العميل؟');">
+                  <button class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+
+            <div class="modal fade" id="edit-<%= c.id %>" tabindex="-1">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <form method="POST" action="/customers/<%= c.id %>">
+                    <div class="modal-header">
+                      <h6 class="modal-title">تعديل بيانات <%= c.name %></h6>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                      <div class="mb-3">
+                        <label class="form-label">الاسم</label>
+                        <input type="text" name="name" class="form-control" required value="<%= c.name %>">
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">التليفون</label>
+                        <input type="text" name="phone" class="form-control" value="<%= c.phone || '' %>">
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">الإيميل</label>
+                        <input type="email" name="email" class="form-control" value="<%= c.email || '' %>">
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">العنوان</label>
+                        <input type="text" name="address" class="form-control" value="<%= c.address || '' %>">
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label">ملاحظات</label>
+                        <textarea name="notes" class="form-control" rows="2"><%= c.notes || '' %></textarea>
+                      </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="submit" class="btn btn-primary">حفظ</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+          <% if (customers.length === 0) { %>
+            <tr><td colspan="6" class="text-center text-muted py-4">لسه مفيش عملاء مسجلين</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="newCustomerModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="/customers">
+        <div class="modal-header">
+          <h5 class="modal-title">عميل جديد</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">الاسم</label>
+            <input type="text" name="name" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">التليفون</label>
+            <input type="text" name="phone" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">الإيميل</label>
+            <input type="email" name="email" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">العنوان</label>
+            <input type="text" name="address" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">ملاحظات</label>
+            <textarea name="notes" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">حفظ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

@@ -32,10 +32,13 @@
         <% if (can('expenses')) { %><li class="nav-item"><a class="nav-link" href="/expenses">المصروفات</a></li><% } %>
         <% if (can('sales')) { %><li class="nav-item"><a class="nav-link" href="/sales">المبيعات</a></li><% } %>
         <% if (can('receipts')) { %><li class="nav-item"><a class="nav-link" href="/receipts">استلام فلوس</a></li><% } %>
+        <% if (can('inventory')) { %><li class="nav-item"><a class="nav-link" href="/inventory">المخزون</a></li><% } %>
+        <% if (can('customers')) { %><li class="nav-item"><a class="nav-link" href="/customers">العملاء</a></li><% } %>
         <% if (can('treasury')) { %><li class="nav-item"><a class="nav-link" href="/treasury">الخزنة</a></li><% } %>
         <% if (can('accounts')) { %><li class="nav-item"><a class="nav-link" href="/accounts">شجرة الحسابات</a></li><% } %>
         <% if (can('reports')) { %><li class="nav-item"><a class="nav-link" href="/reports">التقارير</a></li><% } %>
         <% if (can('closing')) { %><li class="nav-item"><a class="nav-link" href="/closing">التقفيل الشهري</a></li><% } %>
+        <% if (can('assistant')) { %><li class="nav-item"><a class="nav-link" href="/assistant"><i class="fa-solid fa-robot"></i> المساعد الافتراضي</a></li><% } %>
         <% if (can('users') || can('roles')) { %>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">الإدارة</a>

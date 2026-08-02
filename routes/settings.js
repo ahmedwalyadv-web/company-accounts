@@ -19,12 +19,28 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 router.post('/', upload.single('logo'), asyncHandler(async (req, res) => {
-  const { name, currency } = req.body;
+  const { name, currency, anthropic_api_key } = req.body;
+  // لو حقل المفتاح فاضي، سيبه كما هو (عشان مانمسحش المفتاح المحفوظ بالغلط)
+  // لو المستخدم كتب "-" يبقى قصده يمسح المفتاح
   if (req.file) {
     const base64 = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    if (anthropic_api_key !== undefined && anthropic_api_key !== '') {
+      const keyValue = anthropic_api_key === '-' ? null : anthropic_api_key;
+      await pool.query(
+        'UPDATE company_settings SET name = $1, currency = $2, logo_data = $3, anthropic_api_key = $4, updated_at = NOW() WHERE id = 1',
+        [name, currency, base64, keyValue]
+      );
+    } else {
+      await pool.query(
+        'UPDATE company_settings SET name = $1, currency = $2, logo_data = $3, updated_at = NOW() WHERE id = 1',
+        [name, currency, base64]
+      );
+    }
+  } else if (anthropic_api_key !== undefined && anthropic_api_key !== '') {
+    const keyValue = anthropic_api_key === '-' ? null : anthropic_api_key;
     await pool.query(
-      'UPDATE company_settings SET name = $1, currency = $2, logo_data = $3, updated_at = NOW() WHERE id = 1',
-      [name, currency, base64]
+      'UPDATE company_settings SET name = $1, currency = $2, anthropic_api_key = $3, updated_at = NOW() WHERE id = 1',
+      [name, currency, keyValue]
     );
   } else {
     await pool.query(

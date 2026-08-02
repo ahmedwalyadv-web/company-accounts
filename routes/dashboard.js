@@ -6,12 +6,13 @@ const asyncHandler = require('../middleware/asyncHandler');
 const router = express.Router();
 
 router.get('/', requireLogin, asyncHandler(async (req, res) => {
-  const [purchases, expenses, sales, receipts, treasuryBalance, recent] = await Promise.all([
+  const [purchases, expenses, sales, receipts, treasuryBalance, inventoryValue, recent] = await Promise.all([
     pool.query(`SELECT COALESCE(SUM(amount),0) AS total FROM purchases WHERE entry_date >= date_trunc('month', CURRENT_DATE)`),
     pool.query(`SELECT COALESCE(SUM(amount),0) AS total FROM expenses WHERE entry_date >= date_trunc('month', CURRENT_DATE)`),
     pool.query(`SELECT COALESCE(SUM(amount),0) AS total FROM sales WHERE entry_date >= date_trunc('month', CURRENT_DATE)`),
     pool.query(`SELECT COALESCE(SUM(amount),0) AS total FROM receipts WHERE entry_date >= date_trunc('month', CURRENT_DATE)`),
     pool.query(`SELECT COALESCE(SUM(CASE WHEN direction='in' THEN amount ELSE -amount END),0) AS balance FROM treasury_ledger`),
+    pool.query(`SELECT COALESCE(SUM(quantity_on_hand * unit_cost),0) AS total FROM items`),
     pool.query(`
       SELECT * FROM (
         SELECT 'purchases' AS module, entry_date, party, amount, created_at FROM purchases
@@ -32,7 +33,8 @@ router.get('/', requireLogin, asyncHandler(async (req, res) => {
       expenses: expenses.rows[0].total,
       sales: sales.rows[0].total,
       receipts: receipts.rows[0].total,
-      treasury: treasuryBalance.rows[0].balance
+      treasury: treasuryBalance.rows[0].balance,
+      inventoryValue: inventoryValue.rows[0].total
     },
     recent: recent.rows
   });

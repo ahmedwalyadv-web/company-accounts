@@ -1,0 +1,145 @@
+<%- include('../partials/header', { title: title }) %>
+
+<div class="row justify-content-center">
+  <div class="col-lg-10">
+    <div class="card">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-4"><%= invoice ? 'تعديل فاتورة شراء #' + invoice.id : 'فاتورة شراء جديدة' %></h5>
+
+        <% if (error) { %><div class="alert alert-danger"><%= error %></div><% } %>
+
+        <form method="POST" action="<%= invoice ? '/purchases/' + invoice.id : '/purchases' %>" id="invoiceForm">
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label class="form-label">التاريخ</label>
+              <input type="date" name="entry_date" class="form-control" required
+                     value="<%= invoice ? new Date(invoice.entry_date).toISOString().slice(0,10) : today %>">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">المورد</label>
+              <input type="text" name="party" class="form-control" required value="<%= invoice ? invoice.party : '' %>">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">طريقة الدفع للمورد</label>
+              <select name="payment_method" class="form-select" required>
+                <% paymentMethods.forEach(m => { %>
+                  <option value="<%= m.value %>" <%= invoice && invoice.payment_method === m.value ? 'selected' : '' %>><%= m.label %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">مين اللي دفع</label>
+              <select name="paid_by_user_id" class="form-select">
+                <option value="">-- اختر --</option>
+                <% users.forEach(u => { %>
+                  <option value="<%= u.id %>" <%= invoice && invoice.paid_by_user_id === u.id ? 'selected' : (!invoice && u.id === currentUser.id ? 'selected' : '') %>><%= u.full_name %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="col-md-8">
+              <label class="form-label">وصف / ملاحظات على الفاتورة</label>
+              <input type="text" name="description" class="form-control" value="<%= invoice ? (invoice.description || '') : '' %>">
+            </div>
+          </div>
+
+          <hr>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold mb-0">أصناف الفاتورة</h6>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="addLineBtn"><i class="fa-solid fa-plus"></i> إضافة صنف</button>
+          </div>
+          <small class="text-muted">فاتورة الشراء الواحدة ممكن تحتوي على أكتر من نوع جهاز بكميات مختلفة. حدد "جهاز/أصل" لكل صنف يُضاف تلقائيًا للمخزون — غير المحدد (خامات/مصروفات) ما بيتأثر فيه المخزون.</small>
+
+          <div class="table-responsive mt-2">
+            <table class="table align-middle" id="linesTable">
+              <thead>
+                <tr>
+                  <th style="min-width:220px">اسم الصنف</th>
+                  <th>جهاز/أصل؟</th>
+                  <th style="width:110px">الكمية</th>
+                  <th style="width:140px">سعر الوحدة</th>
+                  <th style="width:140px">الإجمالي</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="linesBody"></tbody>
+            </table>
+          </div>
+
+          <div class="d-flex justify-content-end mb-4">
+            <div class="text-end">
+              <div class="text-muted">إجمالي الفاتورة</div>
+              <h5 class="fw-bold" id="invoiceTotal">0.00</h5>
+            </div>
+          </div>
+
+          <datalist id="itemsList">
+            <% items.forEach(i => { %><option value="<%= i.name %>"><% }) %>
+          </datalist>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary px-4">حفظ الفاتورة</button>
+            <a href="/purchases" class="btn btn-outline-secondary">إلغاء</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var body = document.getElementById('linesBody');
+  var lineSeq = 0; // بيزيد باستمرار ومايترجعش، عشان لو صف اتحذف مايبوظش ترقيم الصفوف الباقية
+
+  function rowTemplate(line) {
+    line = line || {};
+    var idx = lineSeq++;
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td><input type="text" name="lines[' + idx + '][item_name]" list="itemsList" class="form-control item-name" required value="' + (line.item_name || '').replace(/"/g,'&quot;') + '"></td>' +
+      '<td class="text-center"><input type="checkbox" name="lines[' + idx + '][is_asset]" class="form-check-input asset-check" ' + (line.is_asset ? 'checked' : '') + '></td>' +
+      '<td><input type="number" step="0.01" min="0.01" name="lines[' + idx + '][quantity]" class="form-control qty" required value="' + (line.quantity || 1) + '"></td>' +
+      '<td><input type="number" step="0.01" min="0" name="lines[' + idx + '][unit_price]" class="form-control price" required value="' + (line.unit_price || 0) + '"></td>' +
+      '<td class="line-total fw-bold">0.00</td>' +
+      '<td><button type="button" class="btn btn-sm btn-outline-danger remove-line"><i class="fa-solid fa-trash"></i></button></td>';
+    return tr;
+  }
+
+  function recalc() {
+    var total = 0;
+    body.querySelectorAll('tr').forEach(function (tr) {
+      var qty = parseFloat(tr.querySelector('.qty').value) || 0;
+      var price = parseFloat(tr.querySelector('.price').value) || 0;
+      var lineTotal = qty * price;
+      tr.querySelector('.line-total').textContent = lineTotal.toLocaleString('ar-EG', { minimumFractionDigits: 2 });
+      total += lineTotal;
+    });
+    document.getElementById('invoiceTotal').textContent = total.toLocaleString('ar-EG', { minimumFractionDigits: 2 });
+  }
+
+  function addLine(line) {
+    var tr = rowTemplate(line);
+    body.appendChild(tr);
+    tr.querySelectorAll('.qty, .price').forEach(function (el) { el.addEventListener('input', recalc); });
+    tr.querySelector('.remove-line').addEventListener('click', function () {
+      if (body.querySelectorAll('tr').length > 1) { tr.remove(); recalc(); }
+    });
+    recalc();
+  }
+
+  document.getElementById('addLineBtn').addEventListener('click', function () { addLine(); });
+
+  var existingLines = <%- JSON.stringify(lines || []) %>;
+  if (existingLines.length) {
+    existingLines.forEach(function (l) { addLine(l); });
+  } else {
+    addLine();
+  }
+
+  document.getElementById('invoiceForm').addEventListener('submit', function () {
+    // نتأكد إن كل صف فيه اسم صنف قبل الإرسال (تحقق بسيط في المتصفح، والسيرفر بيتحقق تاني برجاء)
+  });
+})();
+</script>
+
+<%- include('../partials/footer') %>

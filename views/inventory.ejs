@@ -1,0 +1,148 @@
+<%- include('partials/header', { title: 'المخزون' }) %>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="fw-bold mb-0">المخزون</h4>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#adjustModal">
+    <i class="fa-solid fa-plus"></i> تسوية / إضافة صنف يدويًا
+  </button>
+</div>
+
+<% if (error) { %><div class="alert alert-danger"><%= error %></div><% } %>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="stat-card bg-treasury">
+      <span>التقدير المالي لرأس المال (قيمة المخزون)</span>
+      <h3><%= Number(totalValue).toLocaleString('ar-EG') %></h3>
+      <small><%= company.currency %></small>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card bg-purchases">
+      <span>عدد الأصناف</span>
+      <h3><%= items.length %></h3>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">الأصناف الحالية</h6>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>الصنف</th>
+            <th>الكمية المتاحة</th>
+            <th>متوسط تكلفة الوحدة</th>
+            <th>القيمة الإجمالية</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% items.forEach(i => { %>
+            <tr>
+              <td><%= i.name %></td>
+              <td class="<%= Number(i.quantity_on_hand) <= 0 ? 'text-danger fw-bold' : '' %>"><%= Number(i.quantity_on_hand).toLocaleString('ar-EG') %></td>
+              <td><%= Number(i.unit_cost).toLocaleString('ar-EG') %></td>
+              <td class="fw-bold"><%= (Number(i.quantity_on_hand) * Number(i.unit_cost)).toLocaleString('ar-EG') %> <%= company.currency %></td>
+            </tr>
+          <% }) %>
+          <% if (items.length === 0) { %>
+            <tr><td colspan="4" class="text-center text-muted py-3">لسه مفيش أصناف في المخزن</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3">سجل حركة المخزون</h6>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>التاريخ</th>
+            <th>الصنف</th>
+            <th>النوع</th>
+            <th>الكمية</th>
+            <th>المصدر</th>
+            <th>الوصف</th>
+            <th>بواسطة</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% const srcLabels = { purchases: 'مشتريات', sales: 'مبيعات', adjustment: 'تسوية يدوية' }; %>
+          <% movements.forEach(m => { %>
+            <tr>
+              <td><%= new Date(m.entry_date).toLocaleDateString('ar-EG') %></td>
+              <td><%= m.item_name %></td>
+              <td>
+                <% if (m.direction === 'in') { %><span class="badge bg-success">وارد</span>
+                <% } else { %><span class="badge bg-danger">منصرف</span><% } %>
+              </td>
+              <td><%= Number(m.quantity).toLocaleString('ar-EG') %></td>
+              <td><%= srcLabels[m.source_module] || m.source_module %></td>
+              <td><%= m.description || '-' %></td>
+              <td><small class="text-muted"><%= m.created_by_name || '-' %></small></td>
+            </tr>
+          <% }) %>
+          <% if (movements.length === 0) { %>
+            <tr><td colspan="7" class="text-center text-muted py-3">لسه مفيش حركات</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="adjustModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="/inventory/adjust">
+        <div class="modal-header">
+          <h5 class="modal-title">تسوية / إضافة صنف يدويًا</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">اسم الصنف</label>
+            <input type="text" name="item_name" class="form-control" list="itemsList" required placeholder="اكتب اسم صنف موجود أو جديد">
+            <datalist id="itemsList">
+              <% items.forEach(i => { %><option value="<%= i.name %>"><% }) %>
+            </datalist>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">التاريخ</label>
+            <input type="date" name="entry_date" class="form-control" required value="<%= new Date().toISOString().slice(0,10) %>">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">النوع</label>
+            <select name="direction" class="form-select">
+              <option value="in">إضافة كمية (وارد)</option>
+              <option value="out">خصم كمية (منصرف)</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">الكمية</label>
+            <input type="number" step="0.01" min="0.01" name="quantity" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">تكلفة الوحدة (لو إضافة صنف جديد أو تحديث التكلفة)</label>
+            <input type="number" step="0.01" min="0" name="unit_cost" class="form-control" placeholder="اختياري">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">ملاحظات</label>
+            <input type="text" name="description" class="form-control" placeholder="مثال: رصيد افتتاحي / تلف">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">حفظ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,185 @@
+<%- include('../partials/header', { title: title }) %>
+
+<div class="row justify-content-center">
+  <div class="col-lg-10">
+    <div class="card">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-4"><%= invoice ? 'تعديل فاتورة #' + invoice.id : 'فاتورة بيع/إيجار جديدة' %></h5>
+
+        <% if (error) { %><div class="alert alert-danger"><%= error %></div><% } %>
+
+        <form method="POST" action="<%= invoice ? '/sales/' + invoice.id : '/sales' %>" id="invoiceForm">
+          <div class="row g-3 mb-4">
+            <div class="col-md-3">
+              <label class="form-label">التاريخ</label>
+              <input type="date" name="entry_date" class="form-control" required
+                     value="<%= invoice ? new Date(invoice.entry_date).toISOString().slice(0,10) : today %>">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">نوع العملية</label>
+              <select name="sale_type" id="saleType" class="form-select" required>
+                <% saleTypes.forEach(s => { %>
+                  <option value="<%= s.value %>" <%= invoice && invoice.sale_type === s.value ? 'selected' : '' %>><%= s.label %></option>
+                <% }) %>
+              </select>
+              <small class="text-muted">"بيع" بينقص من المخزون، "إيجار" لا</small>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">عميل مسجل (اختياري)</label>
+              <select name="customer_id" id="customerSelect" class="form-select">
+                <option value="">-- بدون / عميل جديد --</option>
+                <% customers.forEach(c => { %>
+                  <option value="<%= c.id %>" data-name="<%= c.name %>" <%= invoice && invoice.customer_id === c.id ? 'selected' : '' %>><%= c.name %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">اسم العميل</label>
+              <input type="text" name="party" id="partyInput" class="form-control" required value="<%= invoice ? invoice.party : '' %>">
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">الفلوس وصلت إزاي</label>
+              <select name="payment_method" id="paymentMethod" class="form-select" required>
+                <% paymentMethods.forEach(m => { %>
+                  <option value="<%= m.value %>" <%= invoice && invoice.payment_method === m.value ? 'selected' : '' %>><%= m.label %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="col-md-4 payment-field" data-method="bank">
+              <label class="form-label">أي حساب بنكي</label>
+              <select name="account_id" class="form-select">
+                <option value="">-- اختر الحساب البنكي --</option>
+                <% accounts.forEach(a => { %>
+                  <option value="<%= a.id %>" <%= invoice && invoice.account_id === a.id ? 'selected' : '' %>><%= a.name %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="col-md-4 payment-field" data-method="cash">
+              <label class="form-label">مين استلم الكاش</label>
+              <select name="received_by_user_id" class="form-select">
+                <option value="">-- اختر --</option>
+                <% users.forEach(u => { %>
+                  <option value="<%= u.id %>" <%= invoice && invoice.received_by_user_id === u.id ? 'selected' : (!invoice && u.id === currentUser.id ? 'selected' : '') %>><%= u.full_name %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">وصف / ملاحظات على الفاتورة</label>
+              <input type="text" name="description" class="form-control" value="<%= invoice ? (invoice.description || '') : '' %>">
+            </div>
+          </div>
+
+          <hr>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold mb-0">أصناف الفاتورة</h6>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="addLineBtn"><i class="fa-solid fa-plus"></i> إضافة صنف</button>
+          </div>
+          <small class="text-muted">لو النوع "بيع" هيتم خصم الكمية من المخزون تلقائيًا عند الحفظ. لو "إيجار" الكمية تفضل كما هي بالمخزون.</small>
+
+          <div class="table-responsive mt-2">
+            <table class="table align-middle" id="linesTable">
+              <thead>
+                <tr>
+                  <th style="min-width:220px">اسم الصنف</th>
+                  <th style="width:110px">الكمية</th>
+                  <th style="width:140px">سعر الوحدة</th>
+                  <th style="width:140px">الإجمالي</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="linesBody"></tbody>
+            </table>
+          </div>
+
+          <div class="d-flex justify-content-end mb-4">
+            <div class="text-end">
+              <div class="text-muted">إجمالي الفاتورة</div>
+              <h5 class="fw-bold" id="invoiceTotal">0.00</h5>
+            </div>
+          </div>
+
+          <datalist id="itemsList">
+            <% items.forEach(i => { %><option value="<%= i.name %>"><%= i.name %> (متاح: <%= Number(i.quantity_on_hand).toLocaleString('ar-EG') %>)</option><% }) %>
+          </datalist>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary px-4">حفظ الفاتورة</button>
+            <a href="/sales" class="btn btn-outline-secondary">إلغاء</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var body = document.getElementById('linesBody');
+  var lineSeq = 0;
+
+  function rowTemplate(line) {
+    line = line || {};
+    var idx = lineSeq++;
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td><input type="text" name="lines[' + idx + '][item_name]" list="itemsList" class="form-control item-name" required value="' + (line.item_name || '').replace(/"/g,'&quot;') + '"></td>' +
+      '<td><input type="number" step="0.01" min="0.01" name="lines[' + idx + '][quantity]" class="form-control qty" required value="' + (line.quantity || 1) + '"></td>' +
+      '<td><input type="number" step="0.01" min="0" name="lines[' + idx + '][unit_price]" class="form-control price" required value="' + (line.unit_price || 0) + '"></td>' +
+      '<td class="line-total fw-bold">0.00</td>' +
+      '<td><button type="button" class="btn btn-sm btn-outline-danger remove-line"><i class="fa-solid fa-trash"></i></button></td>';
+    return tr;
+  }
+
+  function recalc() {
+    var total = 0;
+    body.querySelectorAll('tr').forEach(function (tr) {
+      var qty = parseFloat(tr.querySelector('.qty').value) || 0;
+      var price = parseFloat(tr.querySelector('.price').value) || 0;
+      var lineTotal = qty * price;
+      tr.querySelector('.line-total').textContent = lineTotal.toLocaleString('ar-EG', { minimumFractionDigits: 2 });
+      total += lineTotal;
+    });
+    document.getElementById('invoiceTotal').textContent = total.toLocaleString('ar-EG', { minimumFractionDigits: 2 });
+  }
+
+  function addLine(line) {
+    var tr = rowTemplate(line);
+    body.appendChild(tr);
+    tr.querySelectorAll('.qty, .price').forEach(function (el) { el.addEventListener('input', recalc); });
+    tr.querySelector('.remove-line').addEventListener('click', function () {
+      if (body.querySelectorAll('tr').length > 1) { tr.remove(); recalc(); }
+    });
+    recalc();
+  }
+
+  document.getElementById('addLineBtn').addEventListener('click', function () { addLine(); });
+
+  var existingLines = <%- JSON.stringify(lines || []) %>;
+  if (existingLines.length) {
+    existingLines.forEach(function (l) { addLine(l); });
+  } else {
+    addLine();
+  }
+
+  // تبديل حقول طريقة التحصيل (بنكي/كاش)
+  var paySelect = document.getElementById('paymentMethod');
+  var payFields = document.querySelectorAll('.payment-field');
+  function togglePay() {
+    var method = paySelect.value;
+    payFields.forEach(function (el) { el.style.display = (el.dataset.method === method) ? '' : 'none'; });
+  }
+  paySelect.addEventListener('change', togglePay);
+  togglePay();
+
+  // لو اختار عميل مسجل، نملّي اسم العميل تلقائيًا في حقل الاسم
+  var customerSelect = document.getElementById('customerSelect');
+  var partyInput = document.getElementById('partyInput');
+  customerSelect.addEventListener('change', function () {
+    var opt = customerSelect.options[customerSelect.selectedIndex];
+    if (customerSelect.value && opt) { partyInput.value = opt.dataset.name || opt.textContent; }
+  });
+})();
+</script>
+
+<%- include('../partials/footer') %>

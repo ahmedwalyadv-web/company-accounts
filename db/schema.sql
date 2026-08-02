@@ -25,8 +25,44 @@ CREATE TABLE IF NOT EXISTS company_settings (
   name TEXT NOT NULL DEFAULT 'اسم الشركة',
   logo_data TEXT,
   currency TEXT NOT NULL DEFAULT 'ج.م',
+  anthropic_api_key TEXT, -- مفتاح المساعد الافتراضي (اختياري)
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
   CONSTRAINT single_row CHECK (id = 1)
+);
+
+-- الأصناف/الأجهزة اللي بتتخزن في المخزن
+CREATE TABLE IF NOT EXISTS items (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  unit_cost NUMERIC(14,2) NOT NULL DEFAULT 0, -- متوسط تكلفة الوحدة
+  quantity_on_hand NUMERIC(14,2) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- سجل حركة المخزون (وارد من مشتريات / منصرف من مبيعات / تسوية يدوية)
+CREATE TABLE IF NOT EXISTS inventory_movements (
+  id SERIAL PRIMARY KEY,
+  item_id INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+  direction TEXT NOT NULL, -- in / out
+  quantity NUMERIC(14,2) NOT NULL,
+  source_module TEXT NOT NULL, -- purchases / sales / adjustment
+  source_id INTEGER,
+  unit_cost NUMERIC(14,2), -- تكلفة الوحدة وقت الحركة (لازمة لعكس الحركة بدقة عند التعديل/الحذف)
+  entry_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  description TEXT,
+  created_by INTEGER REFERENCES users(id),
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- بيانات العملاء
+CREATE TABLE IF NOT EXISTS customers (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  phone TEXT,
+  email TEXT,
+  address TEXT,
+  notes TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 -- شجرة الحسابات
@@ -73,6 +109,18 @@ CREATE TABLE IF NOT EXISTS purchases (
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+-- بنود فاتورة الشراء (ممكن الفاتورة الواحدة تحتوي أكتر من صنف)
+CREATE TABLE IF NOT EXISTS purchase_lines (
+  id SERIAL PRIMARY KEY,
+  purchase_id INTEGER NOT NULL REFERENCES purchases(id) ON DELETE CASCADE,
+  is_asset BOOLEAN NOT NULL DEFAULT FALSE, -- جهاز/أصل؟ لو صح بيتضاف للمخزن
+  item_id INTEGER REFERENCES items(id),
+  item_name TEXT NOT NULL,
+  quantity NUMERIC(14,2) NOT NULL DEFAULT 1,
+  unit_price NUMERIC(14,2) NOT NULL DEFAULT 0,
+  line_total NUMERIC(14,2) NOT NULL DEFAULT 0
+);
+
 CREATE TABLE IF NOT EXISTS expenses (
   id SERIAL PRIMARY KEY,
   entry_date DATE NOT NULL DEFAULT CURRENT_DATE,
@@ -95,8 +143,21 @@ CREATE TABLE IF NOT EXISTS sales (
   description TEXT,
   payment_method TEXT NOT NULL DEFAULT 'cash', -- cash / bank
   received_by_user_id INTEGER REFERENCES users(id), -- مين استلم الكاش (لو الدفع كاش)
+  sale_type TEXT NOT NULL DEFAULT 'sale', -- sale (بيع) / rental (إيجار)
+  customer_id INTEGER REFERENCES customers(id),
   created_by INTEGER REFERENCES users(id),
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- بنود فاتورة البيع/الإيجار (ممكن الفاتورة الواحدة تحتوي أكتر من صنف)
+CREATE TABLE IF NOT EXISTS sale_lines (
+  id SERIAL PRIMARY KEY,
+  sale_id INTEGER NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
+  item_id INTEGER REFERENCES items(id),
+  item_name TEXT NOT NULL,
+  quantity NUMERIC(14,2) NOT NULL DEFAULT 1,
+  unit_price NUMERIC(14,2) NOT NULL DEFAULT 0,
+  line_total NUMERIC(14,2) NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS receipts (
@@ -142,6 +203,10 @@ ALTER TABLE purchases ADD COLUMN IF NOT EXISTS payment_method TEXT NOT NULL DEFA
 ALTER TABLE purchases ADD COLUMN IF NOT EXISTS paid_by_user_id INTEGER REFERENCES users(id);
 ALTER TABLE sales ADD COLUMN IF NOT EXISTS payment_method TEXT NOT NULL DEFAULT 'cash';
 ALTER TABLE sales ADD COLUMN IF NOT EXISTS received_by_user_id INTEGER REFERENCES users(id);
+ALTER TABLE sales ADD COLUMN IF NOT EXISTS sale_type TEXT NOT NULL DEFAULT 'sale';
+ALTER TABLE sales ADD COLUMN IF NOT EXISTS customer_id INTEGER REFERENCES customers(id);
+ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS anthropic_api_key TEXT;
+ALTER TABLE inventory_movements ADD COLUMN IF NOT EXISTS unit_cost NUMERIC(14,2);
 
 CREATE TABLE IF NOT EXISTS "session" (
   sid VARCHAR NOT NULL COLLATE "default" PRIMARY KEY,
